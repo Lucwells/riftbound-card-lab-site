@@ -1534,14 +1534,14 @@
       }
     }
 
-    function playRateColor(ratio) {
-      // Interpolates between the theme's --red and --green (matching the
-      // rest of the site's palette) rather than a generic hue sweep, so a
-      // card played in every deck reads pure green and a barely-played one
-      // reads pure red, with a smooth blend between.
+    // --red at 0%, --text at 50%, --green at 100%
+    function ratioColor(ratio) {
       const red = [0xE5, 0x53, 0x4B];
+      const mid = [0xE6, 0xED, 0xF3];
       const green = [0x5F, 0xBF, 0x77];
-      const [r, g, b] = red.map((c, i) => Math.round(c + (green[i] - c) * ratio));
+      const clamped = Math.min(Math.max(ratio, 0), 1);
+      const [from, to, t] = clamped < 0.5 ? [red, mid, clamped * 2] : [mid, green, (clamped - 0.5) * 2];
+      const [r, g, b] = from.map((c, i) => Math.round(c + (to[i] - c) * t));
       return `rgb(${r}, ${g}, ${b})`;
     }
 
@@ -1584,7 +1584,10 @@
 
         const withoutCell = card.avg_percentile_without === null
           ? `<span style="color:var(--text-muted);">— every deck runs it</span>`
-          : `${card.avg_percentile_without.toFixed(1)}%`;
+          : (() => {
+              const color = ratioColor(card.decks_without / totalDecks);
+              return `<span style="color:${color};">${card.avg_percentile_without.toFixed(1)}%</span><span class="playrate-count" style="color:${color};">n = ${card.decks_without}/${totalDecks}</span>`;
+            })();
 
         // Only badge Sideboard rows - Mainboard is the assumed default, and
         // when currentZone is already filtered to one zone the badge would
@@ -1595,7 +1598,7 @@
         return `
           <tr>
             <td><span class="card-name">${card.card_name}</span>${zoneBadge}<span class="card-type">${card.card_type}</span></td>
-            <td class="num"><span class="playrate-bar"><span class="playrate-fill" style="width:${playRatePct}%"></span></span>${playRatePct}%<span class="playrate-count" style="color:${playRateColor(card.play_rate)};">${card.decks_played}/${totalDecks}</span></td>
+            <td class="num"><span class="playrate-bar"><span class="playrate-fill" style="width:${playRatePct}%"></span></span>${playRatePct}%<span class="playrate-count" style="color:${ratioColor(card.play_rate)};">${card.decks_played}/${totalDecks}</span></td>
             <td class="num">${withCell}</td>
             <td class="num">${withoutCell}</td>
             <td class="num">${copiesCellHtml(card.card_name, card.zone)}</td>
