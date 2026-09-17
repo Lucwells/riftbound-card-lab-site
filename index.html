@@ -1,0 +1,1671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Riftbound Card Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0D1117;
+    --surface: #151B23;
+    --surface-2: #1C2530;
+    --border: #263041;
+    --text: #E6EDF3;
+    --text-muted: #8B949E;
+    --teal: #4FD1C5;
+    --gold: #E8B04B;
+    --green: #5FBF77;
+    --red: #E5534B;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  header.hero {
+    margin-bottom: 40px;
+  }
+
+  .eyebrow {
+    color: var(--teal);
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    margin-bottom: 6px;
+  }
+
+  h1 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 42px;
+    line-height: 1.05;
+    margin: 0 0 10px;
+    letter-spacing: -0.01em;
+  }
+
+  .sub {
+    color: var(--text-muted);
+    font-size: 15px;
+    max-width: 60ch;
+    line-height: 1.5;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+
+  .tab-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    font-size: 16px;
+    padding: 10px 16px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+
+  .tab-btn:hover { color: var(--text); }
+
+  .tab-btn.active {
+    color: var(--teal);
+    border-bottom-color: var(--teal);
+  }
+
+  .tab-panel { padding-top: 24px; }
+
+  /* Trend chart */
+  .chart-wrap {
+    margin-top: 12px;
+  }
+
+  #trend-chart-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+
+  .chart-legend {
+    display: flex;
+    gap: 20px;
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .chart-legend .dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 5px;
+  }
+  .dot.low { background: var(--red); }
+  .dot.med { background: var(--gold); }
+  .dot.high { background: var(--teal); }
+
+  .trend-point:hover { r: 6; }
+
+  /* Best decks list */
+  .best-deck-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  .best-deck-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    cursor: pointer;
+  }
+
+  .best-deck-header:hover { background: var(--surface-2); }
+
+  .best-deck-title {
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  .best-deck-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .best-deck-badge {
+    background: rgba(79,209,197,0.12);
+    color: var(--teal);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 12px;
+  }
+
+  .best-deck-body {
+    padding: 0 16px 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .best-deck-body.collapsed { display: none; }
+
+  .decklist-group {
+    margin-top: 12px;
+  }
+
+  .decklist-group h4 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    margin: 0 0 6px;
+  }
+
+  .decklist-cards {
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  /* Card gallery */
+  .gallery-filters {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+
+  #gallery-search {
+    flex: 1;
+    min-width: 200px;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+  }
+
+  #gallery-domain-filter, #gallery-set-filter, #gallery-type-filter {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .gallery-grid {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 16px;
+  }
+
+  .gallery-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .gallery-card img {
+    width: 100%;
+    display: block;
+    aspect-ratio: 744 / 1039;
+    object-fit: cover;
+    background: var(--surface-2);
+  }
+
+  .gallery-card-info {
+    padding: 10px 12px 12px;
+  }
+
+  .gallery-card-name {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.3;
+    margin-bottom: 4px;
+  }
+
+  .gallery-card-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .domain-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+  .domain-badge.fury  { background: rgba(229,83,75,0.15); color: #E5534B; }   /* red */
+  .domain-badge.calm  { background: rgba(95,191,119,0.15); color: #5FBF77; }  /* green */
+  .domain-badge.mind  { background: rgba(91,147,240,0.15); color: #5B93F0; }  /* blue */
+  .domain-badge.body  { background: rgba(240,151,90,0.15); color: #F0975A; }  /* orange */
+  .domain-badge.chaos { background: rgba(178,138,255,0.15); color: #B28AFF; } /* purple */
+  .domain-badge.order { background: rgba(240,220,120,0.15); color: #F0DC78; } /* yellow */
+
+  .gallery-empty {
+    color: var(--text-muted);
+    font-size: 14px;
+    grid-column: 1 / -1;
+  }
+
+  .gallery-empty code {
+    background: var(--surface-2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--teal);
+    font-size: 12px;
+  }
+  .legend-select-row {
+    margin: 32px 0 8px;
+  }
+
+  .select-label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .legend-combobox {
+    position: relative;
+    max-width: 420px;
+  }
+
+  .legend-combobox input {
+    width: 100%;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  .legend-combobox input::placeholder {
+    color: var(--text-muted);
+  }
+
+  .legend-combobox input:focus {
+    outline: 2px solid var(--teal);
+    outline-offset: 1px;
+  }
+
+  .legend-options-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    max-height: 240px;
+    overflow-y: auto;
+    margin: 0;
+    padding: 6px;
+    list-style: none;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+    z-index: 10;
+  }
+
+  .legend-options-list li {
+    padding: 9px 10px;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .legend-options-list li:hover {
+    background: var(--surface);
+  }
+
+  .legend-options-list li.disabled {
+    color: var(--text-muted);
+    cursor: default;
+  }
+
+  .legend-options-list li.disabled:hover {
+    background: transparent;
+  }
+
+  .legend-options-list li.no-match {
+    color: var(--text-muted);
+    cursor: default;
+  }
+
+  .legend-caption {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-bottom: 40px;
+  }
+
+  /* Legend detail header */
+  .legend-detail {
+    border-top: 1px solid var(--border);
+    padding-top: 32px;
+  }
+
+  .legend-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 28px;
+    margin: 0 0 4px;
+  }
+
+  .legend-meta {
+    color: var(--text-muted);
+    font-size: 13px;
+    display: flex;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .legend-meta strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .scope-toggle {
+    display: inline-flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 3px;
+    margin-bottom: 20px;
+    gap: 2px;
+  }
+
+  .scope-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 7px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .scope-btn:hover { color: var(--text); }
+
+  .scope-btn.active {
+    background: var(--surface-2);
+    color: var(--teal);
+    font-weight: 600;
+  }
+
+  .tier-toggle {
+    display: inline-flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 3px;
+    margin-bottom: 10px;
+    gap: 2px;
+  }
+
+  .tier-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 7px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .tier-btn:hover { color: var(--text); }
+
+  .tier-btn.active {
+    background: var(--surface-2);
+    color: var(--gold);
+    font-weight: 600;
+  }
+
+  .trendmode-toggle {
+    display: inline-flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 3px;
+    margin-bottom: 10px;
+    gap: 2px;
+  }
+
+  .trendmode-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 7px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .trendmode-btn:hover { color: var(--text); }
+
+  .trendmode-btn.active {
+    background: var(--surface-2);
+    color: var(--gold);
+    font-weight: 600;
+  }
+
+  .zone-toggle {
+    display: inline-flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 3px;
+    margin-bottom: 20px;
+    gap: 2px;
+  }
+
+  .zone-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 7px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .zone-btn:hover { color: var(--text); }
+
+  .zone-btn.active {
+    background: var(--surface-2);
+    color: var(--teal);
+    font-weight: 600;
+  }
+
+  .zone-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    border-radius: 4px;
+    padding: 1px 5px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+
+  .copies-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+
+  .copies-bar {
+    display: flex;
+    width: 90px;
+    height: 10px;
+    border-radius: 3px;
+    overflow: hidden;
+    background: var(--surface-2);
+  }
+
+  .copies-seg {
+    height: 100%;
+  }
+
+  /* 0x is just background (no copies run), 1x/2x/3x get progressively
+     stronger teal so more-copies reads as "more saturated" at a glance */
+  .copies-seg.q0 { background: transparent; }
+  .copies-seg.q1 { background: #2E6F68; }
+  .copies-seg.q2 { background: #3FA095; }
+  .copies-seg.q3 { background: var(--teal); }
+
+  .copies-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: right;
+  }
+
+  .copies-breakdown .dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 2px;
+    margin-right: 4px;
+    vertical-align: middle;
+  }
+
+  .copies-breakdown .dot.q0 { background: var(--surface-2); border: 1px solid var(--border); }
+  .copies-breakdown .dot.q1 { background: #2E6F68; }
+  .copies-breakdown .dot.q2 { background: #3FA095; }
+  .copies-breakdown .dot.q3 { background: var(--teal); }
+
+  .copies-breakdown .pct { color: var(--text); font-weight: 500; }
+
+  /* Table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+  }
+
+  thead th {
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    padding: 0 0 10px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  thead th.num { text-align: right; }
+
+  .sort-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0 16px 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+  }
+
+  .sort-btn:hover { color: var(--text); }
+
+  thead th.num .sort-btn { flex-direction: row-reverse; }
+
+  .arrow {
+    font-size: 15px;
+    font-weight: 700;
+    width: 12px;
+    display: inline-block;
+    color: var(--text-muted);
+  }
+
+  .arrow.active {
+    color: var(--teal);
+  }
+
+  tbody td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+    vertical-align: middle;
+  }
+
+  tbody tr:hover { background: var(--surface); }
+
+  .card-name { font-weight: 600; }
+  .card-type {
+    display: block;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 400;
+    margin-top: 2px;
+  }
+
+  td.num { text-align: right; white-space: nowrap; }
+
+  .playrate-bar {
+    width: 70px;
+    height: 6px;
+    background: var(--surface-2);
+    border-radius: 3px;
+    overflow: hidden;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+  .playrate-fill {
+    height: 100%;
+    background: var(--teal);
+  }
+  .playrate-count {
+    font-size: 12px;
+    margin-left: 5px;
+    font-weight: 600;
+  }
+
+  footer {
+    margin-top: 48px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <div class="eyebrow">Riftbound Card Lab</div>
+      <h1>How every card actually performs, legend by legend.</h1>
+      <p class="sub">Tournament-size-weighted placement data from real Vendetta Set 4 events, broken down per legend so you can tell what's actually good, not just what's commonly played.</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="cardstats">Card Stats</button>
+      <button class="tab-btn" data-tab="trends">Performance Trends</button>
+      <button class="tab-btn" data-tab="bestdecks">Best Decks</button>
+      <button class="tab-btn" data-tab="gallery">Card Gallery</button>
+    </div>
+
+    <div id="tab-cardstats" class="tab-panel">
+    <div class="legend-select-row">
+      <label for="legend-search" class="select-label">Legend</label>
+      <div class="legend-combobox">
+        <input
+          id="legend-search"
+          type="text"
+          placeholder="Type to search, or click to browse all legends"
+          value="Master Yi, Wuju Bladesman"
+          autocomplete="off"
+        >
+        <ul id="legend-options-list" class="legend-options-list" hidden></ul>
+      </div>
+    </div>
+    <div class="legend-caption">Type to jump straight to a legend, or click the field to browse the full list. This list will eventually be generated automatically from every file in legend_tables/, not typed in by hand.</div>
+
+    <div class="legend-detail">
+      <h2 class="legend-name" id="cardstats-legend-title">Master Yi, Wuju Bladesman</h2>
+      <div class="legend-meta">
+        <span id="cardstats-deck-count"><strong>—</strong> decks analyzed</span>
+        <span><strong>China</strong> region</span>
+        <span><strong>Set 4</strong> Vendetta</span>
+      </div>
+
+      <div class="tier-toggle">
+        <button class="tier-btn active" data-tier="all">All Tournaments</button>
+        <button class="tier-btn" data-tier="city">City Challenge</button>
+        <button class="tier-btn" data-tier="open">Regional/National Open</button>
+      </div>
+
+      <div class="scope-toggle">
+        <button class="scope-btn active" data-scope="all">All Players</button>
+        <button class="scope-btn" data-scope="top50">Top 50%</button>
+        <button class="scope-btn" data-scope="top25">Top 25%</button>
+      </div>
+
+      <div class="zone-toggle">
+        <button class="zone-btn active" data-zone="all">All</button>
+        <button class="zone-btn" data-zone="Mainboard">Mainboard</button>
+        <button class="zone-btn" data-zone="Sideboard">Sideboard</button>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th data-key="card_name" data-default-dir="asc">
+              <button class="sort-btn">Card <span class="arrow"></span></button>
+            </th>
+            <th class="num" data-key="play_rate" data-default-dir="desc">
+              <button class="sort-btn">Play rate <span class="arrow"></span></button>
+            </th>
+            <th class="num" data-key="avg_percentile_with" data-default-dir="desc">
+              <button class="sort-btn">Avg. Placement With <span class="arrow"></span></button>
+            </th>
+            <th class="num" data-key="avg_percentile_without" data-default-dir="desc">
+              <button class="sort-btn">Avg. Placement Without <span class="arrow"></span></button>
+            </th>
+            <th class="num">Copies</th>
+          </tr>
+        </thead>
+        <tbody id="card-table-body"></tbody>
+      </table>
+    </div>
+    </div>
+    <!-- end tab-cardstats -->
+
+    <div id="tab-trends" class="tab-panel" hidden>
+      <div class="tier-toggle">
+        <button class="tier-btn active" data-tier="all">All Tournaments</button>
+        <button class="tier-btn" data-tier="city">City Challenge</button>
+        <button class="tier-btn" data-tier="open">Regional/National Open</button>
+      </div>
+
+      <div class="trendmode-toggle">
+        <button class="trendmode-btn active" data-mode="all">All Legends</button>
+        <button class="trendmode-btn" data-mode="legend">By Legend</button>
+      </div>
+
+      <div id="trend-legend-row" class="legend-select-row" hidden>
+        <label for="trend-legend-search" class="select-label">Legend</label>
+        <div class="legend-combobox">
+          <input
+            id="trend-legend-search"
+            type="text"
+            placeholder="Type to search, or click to browse all legends"
+            value="Master Yi, Wuju Bladesman"
+            autocomplete="off"
+          >
+          <ul id="trend-legend-options-list" class="legend-options-list" hidden></ul>
+        </div>
+      </div>
+
+      <div class="legend-select-row">
+        <label for="card-search" class="select-label">Card</label>
+        <div class="legend-combobox">
+          <input
+            id="card-search"
+            type="text"
+            placeholder="Type to search, or click to browse all cards"
+            value="Rengar, Trophy Hunter"
+            autocomplete="off"
+          >
+          <ul id="card-options-list" class="legend-options-list" hidden></ul>
+        </div>
+      </div>
+      <div class="legend-caption" id="trend-caption">Shows this card's performance across every legend and every tournament combined — a bigger-sample, general trend view, separate from the per-legend breakdown below.</div>
+
+      <div class="chart-wrap">
+        <h2 class="legend-name" id="trend-card-title">Rengar, Trophy Hunter</h2>
+        <div id="trend-chart-container"></div>
+        <div class="chart-legend">
+          <span><span class="dot low"></span> Low sample (n ≤ 5)</span>
+          <span><span class="dot med"></span> Medium sample (6-19)</span>
+          <span><span class="dot high"></span> Strong sample (20+)</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-bestdecks" class="tab-panel" hidden>
+      <div class="tier-toggle">
+        <button class="tier-btn active" data-tier="all">All Tournaments</button>
+        <button class="tier-btn" data-tier="city">City Challenge</button>
+        <button class="tier-btn" data-tier="open">Regional/National Open</button>
+      </div>
+
+      <div class="legend-select-row">
+        <label for="bestdeck-legend-search" class="select-label">Legend</label>
+        <div class="legend-combobox">
+          <input
+            id="bestdeck-legend-search"
+            type="text"
+            placeholder="Type to search, or click to browse all legends"
+            value="Master Yi, Wuju Bladesman"
+            autocomplete="off"
+          >
+          <ul id="bestdeck-legend-options-list" class="legend-options-list" hidden></ul>
+        </div>
+      </div>
+      <div class="legend-caption">The highest-placed deck for this legend from each tournament, newest first. Click a row to see the full decklist.</div>
+
+      <div id="best-decks-list"></div>
+    </div>
+
+    <div id="tab-gallery" class="tab-panel" hidden>
+      <div class="gallery-filters">
+        <input id="gallery-search" type="text" placeholder="Search card name..." autocomplete="off">
+        <select id="gallery-domain-filter">
+          <option value="">All Domains</option>
+          <option value="Fury">Fury</option>
+          <option value="Calm">Calm</option>
+          <option value="Mind">Mind</option>
+          <option value="Body">Body</option>
+          <option value="Chaos">Chaos</option>
+          <option value="Order">Order</option>
+        </select>
+        <select id="gallery-set-filter">
+          <option value="">All Sets</option>
+        </select>
+        <select id="gallery-type-filter">
+          <option value="">All Types</option>
+        </select>
+      </div>
+      <div class="legend-caption">928 unique playable cards, base printings only (no alt-art or token duplicates). Loads in batches of 40 as you scroll.</div>
+
+      <div id="gallery-grid" class="gallery-grid"></div>
+    </div>
+
+    <footer>
+      Built from real China Set 4 Vendetta data: 15 tournaments (13 City Challenge, 2 Regional/National Open) and 3,760 decks. Colored sample-size dots on the Performance Trends chart flag results backed by very few decks — treat those as noise, not signal, until sample size grows.
+    </footer>
+  </div>
+
+  <script>
+    // --- Reusable searchable combobox, used for both the legend picker
+    // and the card picker below - same behavior, written once ---
+    // Shared across every tier toggle (Card Stats, Best Decks, Performance
+    // Trends) - 'all' means every scraped tournament pooled together,
+    // regardless of tier, generated into legend_tables_all/
+    function tierDisplayName(tier) {
+      if (tier === 'open') return 'Regional/National Open';
+      if (tier === 'all') return 'All Tournaments';
+      return 'City Challenge';
+    }
+
+    function createCombobox({ inputEl, listEl, items, isEnabled, onSelect }) {
+      // items can be a static array, or a function returning the current
+      // list - the latter lets a combobox's options change later (e.g. the
+      // Performance Trends card list, which depends on whichever legend or
+      // mode is currently selected) without recreating the whole combobox.
+      const getItems = typeof items === 'function' ? items : () => items;
+      let lastConfirmedValue = inputEl.value;
+
+      function render(filterText) {
+        const query = filterText.trim().toLowerCase();
+        const matches = getItems().filter(name => name.toLowerCase().includes(query));
+
+        listEl.innerHTML = '';
+
+        if (matches.length === 0) {
+          const li = document.createElement('li');
+          li.className = 'no-match';
+          li.textContent = 'No matches';
+          listEl.appendChild(li);
+          return;
+        }
+
+        matches.forEach(name => {
+          const enabled = isEnabled(name);
+          const li = document.createElement('li');
+          li.textContent = enabled ? name : `${name} (data not yet loaded)`;
+          if (!enabled) li.classList.add('disabled');
+
+          li.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            if (!enabled) return;
+            inputEl.value = name;
+            lastConfirmedValue = name;
+            close();
+            onSelect(name);
+          });
+
+          listEl.appendChild(li);
+        });
+      }
+
+      function open() {
+        render(inputEl.value);
+        listEl.hidden = false;
+      }
+
+      function close() {
+        listEl.hidden = true;
+      }
+
+      inputEl.addEventListener('focus', () => {
+        inputEl.value = '';
+        open();
+      });
+
+      inputEl.addEventListener('input', () => render(inputEl.value));
+
+      inputEl.addEventListener('blur', () => {
+        const isValid = getItems().some(name => isEnabled(name) && name === inputEl.value.trim());
+        if (!isValid) inputEl.value = lastConfirmedValue;
+        close();
+      });
+    }
+
+    // --- Legend picker (Card Stats tab) ---
+    // Every legend with a *_scoped.json file in legend_tables_city/ - all 47
+    // currently scraped legends, so all are marked loaded. If a legend has
+    // no data for the selected tier (e.g. Regional/National Open, which
+    // hasn't been scraped yet), loadCardStats() already shows a clear
+    // "no data for this tier" message rather than a broken fetch.
+    const LEGENDS = [
+      { name: 'Ahri, Nine-Tailed Fox', loaded: true },
+      { name: 'Akali, Rogue Assassin', loaded: true },
+      { name: 'Ambessa, Matriarch of War', loaded: true },
+      { name: 'Annie, Dark Child', loaded: true },
+      { name: 'Azir, Emperor of the Sands', loaded: true },
+      { name: 'Darius, Hand of Noxus', loaded: true },
+      { name: 'Diana, Scorn of the Moon', loaded: true },
+      { name: 'Draven, Glorious Executioner', loaded: true },
+      { name: 'Ezreal, Prodigal Explorer', loaded: true },
+      { name: 'Fiora, Grand Duelist', loaded: true },
+      { name: 'Irelia, Blade Dancer', loaded: true },
+      { name: 'Ivern, Green Father', loaded: true },
+      { name: 'Jax, Grandmaster at Arms', loaded: true },
+      { name: 'Jayce, Defender of Tomorrow', loaded: true },
+      { name: 'Jhin, Virtuoso', loaded: true },
+      { name: 'Jinx, Loose Cannon', loaded: true },
+      { name: 'Kai\'Sa, Daughter of the Void', loaded: true },
+      { name: 'Kennen, Heart of the Tempest', loaded: true },
+      { name: 'Kha\'Zix, Voidreaver', loaded: true },
+      { name: 'LeBlanc, Deceiver', loaded: true },
+      { name: 'Leona, Radiant Dawn', loaded: true },
+      { name: 'Lillia, Bashful Bloom', loaded: true },
+      { name: 'Lucian, Purifier', loaded: true },
+      { name: 'Lux, Lady of Luminosity', loaded: true },
+      { name: 'Master Yi, Wuju Bladesman', loaded: true },
+      { name: 'Master Yi, Wuju Master', loaded: true },
+      { name: 'Mel, Soul\'s Reflection', loaded: true },
+      { name: 'Miss Fortune, Bounty Hunter', loaded: true },
+      { name: 'Nasus, Curator of the Sands', loaded: true },
+      { name: 'Ornn, Fire Below the Mountain', loaded: true },
+      { name: 'Poppy, Keeper of the Hammer', loaded: true },
+      { name: 'Pyke, Bloodharbor Ripper', loaded: true },
+      { name: 'Rek\'Sai, Void Burrower', loaded: true },
+      { name: 'Renata Glasc, Chem-Baroness', loaded: true },
+      { name: 'Renekton, Butcher of the Sands', loaded: true },
+      { name: 'Rengar, Pridestalker', loaded: true },
+      { name: 'Rumble, Mechanized Menace', loaded: true },
+      { name: 'Sett, The Boss', loaded: true },
+      { name: 'Shen, Eye of Twilight', loaded: true },
+      { name: 'Sivir, Battle Mistress', loaded: true },
+      { name: 'Teemo, Swift Scout', loaded: true },
+      { name: 'Vex, Gloomist', loaded: true },
+      { name: 'Vi, Piltover Enforcer', loaded: true },
+      { name: 'Viktor, Herald of the Arcane', loaded: true },
+      { name: 'Volibear, Relentless Storm', loaded: true },
+      { name: 'Yasuo, Unforgiven', loaded: true },
+      { name: 'Zed, Master of Shadows', loaded: true },
+    ];
+
+    createCombobox({
+      inputEl: document.getElementById('legend-search'),
+      listEl: document.getElementById('legend-options-list'),
+      items: LEGENDS.map(l => l.name),
+      isEnabled: (name) => LEGENDS.find(l => l.name === name).loaded,
+      onSelect: loadCardStats,
+    });
+
+    // --- Card picker (Performance Trends tab) ---
+    // Real per-date trend data, generated by BuildLegendsTable.py once per
+    // tier (matches the Card Stats/Best Decks tier toggle). Two modes:
+    //   'all'    - card_trend_overall.json, every card across every legend
+    //              in the current tier
+    //   'legend' - <legend>_card_trend.json, fetched on demand per legend -
+    //              card list matches Card Stats exactly (same Legend/Runes
+    //              exclusion), so ~100 cards or fewer instead of the full
+    //              card pool
+    // Both are cached per tier (and per legend, for 'legend' mode) so
+    // switching back and forth doesn't re-fetch.
+    let trendMode = 'all';
+    let currentTrendTier = 'all';
+    const TREND_ALL_CACHE = {};      // tier -> {cardName: [...]}
+    const LEGEND_TREND_CACHE = {};   // "tier|legendName" -> {cardName: [...]}
+    let currentTrendLegendName = null;
+
+    function activeTrendData() {
+      if (trendMode === 'legend') {
+        return LEGEND_TREND_CACHE[`${currentTrendTier}|${currentTrendLegendName}`] || {};
+      }
+      return TREND_ALL_CACHE[currentTrendTier] || {};
+    }
+
+    function activeTrendCardNames() {
+      return Object.keys(activeTrendData()).sort();
+    }
+
+    // Keeps the currently-typed card if it's still valid for whatever data
+    // is now active (mode or legend just changed), otherwise falls back to
+    // the alphabetically first card - then renders whichever one that is
+    function refreshTrendCardSelection() {
+      const cardInput = document.getElementById('card-search');
+      const names = activeTrendCardNames();
+      const nextCard = names.includes(cardInput.value) ? cardInput.value : (names[0] || null);
+      cardInput.value = nextCard || '';
+      renderTrendChart(nextCard);
+    }
+
+    function confidenceLevel(n) {
+      if (n <= 5) return 'low';
+      if (n < 20) return 'med';
+      return 'high';
+    }
+
+    function renderTrendChart(cardName) {
+      document.getElementById('trend-card-title').textContent = cardName || '';
+      const points = cardName ? activeTrendData()[cardName] : null;
+      const container = document.getElementById('trend-chart-container');
+
+      if (!points || points.length === 0) {
+        container.innerHTML = `<p style="color:var(--text-muted); font-size:14px; margin:0;">No trend data loaded yet for this card.</p>`;
+        return;
+      }
+
+      const width = 640, height = 220, padding = 36;
+      // A single point has no "step" to divide by - center it instead of
+      // dividing by zero, which produced NaN coordinates (rendered as a
+      // stray dot clipped at the left edge)
+      const xStep = points.length > 1 ? (width - padding * 2) / (points.length - 1) : 0;
+      const xFor = (i) => points.length > 1 ? padding + i * xStep : width / 2;
+
+      // Auto-scale the y-axis to the actual data, instead of always
+      // spanning the full 0-100 range - otherwise small real fluctuations
+      // near, say, 50% would look almost flat and invisible.
+      // But enforce a minimum visible range (20 points) so tiny noise
+      // doesn't get stretched into looking like a dramatic swing either.
+      const values = points.map(p => p.percentile);
+      const rawMin = Math.min(...values);
+      const rawMax = Math.max(...values);
+      const CHART_PADDING_PTS = 5;
+      const MIN_RANGE = 20;
+
+      let axisMin = Math.max(0, rawMin - CHART_PADDING_PTS);
+      let axisMax = Math.min(100, rawMax + CHART_PADDING_PTS);
+      if (axisMax - axisMin < MIN_RANGE) {
+        const mid = (axisMax + axisMin) / 2;
+        axisMin = Math.max(0, mid - MIN_RANGE / 2);
+        axisMax = Math.min(100, mid + MIN_RANGE / 2);
+      }
+
+      const yFor = (pct) => height - padding - ((pct - axisMin) / (axisMax - axisMin)) * (height - padding * 2);
+
+      const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xFor(i)} ${yFor(p.percentile)}`).join(' ');
+
+      const TICK_COUNT = 4;
+      const gridLines = Array.from({ length: TICK_COUNT + 1 }, (_, i) => axisMin + (axisMax - axisMin) * i / TICK_COUNT)
+        .map(tick => `
+          <line x1="${padding}" y1="${yFor(tick)}" x2="${width - padding}" y2="${yFor(tick)}" stroke="var(--border)" stroke-width="1" />
+          <text x="${padding - 8}" y="${yFor(tick) + 4}" text-anchor="end" font-size="10" fill="var(--text-muted)">${tick.toFixed(0)}</text>
+        `).join('');
+
+      const dots = points.map((p, i) => `
+        <circle class="trend-point" cx="${xFor(i)}" cy="${yFor(p.percentile)}" r="4.5"
+          fill="var(--${confidenceLevel(p.decks) === 'low' ? 'red' : confidenceLevel(p.decks) === 'med' ? 'gold' : 'teal'})">
+          <title>${p.date} — ${p.percentile.toFixed(1)}% avg placement (n=${p.decks})</title>
+        </circle>
+      `).join('');
+
+      const labels = points.map((p, i) => `
+        <text x="${xFor(i)}" y="${height - 10}" text-anchor="middle" font-size="10" fill="var(--text-muted)">${p.date.slice(5)}</text>
+      `).join('');
+
+      container.innerHTML = `
+        <svg viewBox="0 0 ${width} ${height}" style="width:100%; height:auto;">
+          ${gridLines}
+          <path d="${linePath}" fill="none" stroke="var(--teal)" stroke-width="2" />
+          ${dots}
+          ${labels}
+        </svg>`;
+    }
+
+    async function loadTrendAll(tier) {
+      if (TREND_ALL_CACHE[tier]) {
+        refreshTrendCardSelection();
+        return;
+      }
+
+      const container = document.getElementById('trend-chart-container');
+      try {
+        const response = await fetch(`legend_tables_${tier}/card_trend_overall.json`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        TREND_ALL_CACHE[tier] = await response.json();
+        refreshTrendCardSelection();
+      } catch (err) {
+        container.innerHTML = `<p style="color:var(--text-muted); font-size:14px; margin:0;">
+          Couldn't load ${tierDisplayName(tier)} card trend data (${err.message}).<br><br>
+          If you're opening this file directly (file://), browsers block
+          local JSON loading for security reasons - run a small local
+          server instead: open a terminal in this folder and run
+          <code>python -m http.server</code>, then visit
+          <code>http://localhost:8000/website.html</code>.
+        </p>`;
+      }
+    }
+
+    createCombobox({
+      inputEl: document.getElementById('card-search'),
+      listEl: document.getElementById('card-options-list'),
+      items: () => activeTrendCardNames(),
+      isEnabled: (name) => name in activeTrendData(),
+      onSelect: renderTrendChart,
+    });
+
+    loadTrendAll(currentTrendTier);
+
+    // --- "By Legend" mode: fetches <legend>_card_trend.json on demand,
+    // cached per tier+legend so switching back and forth doesn't re-fetch
+    async function loadTrendLegend(legendName, tier) {
+      currentTrendLegendName = legendName;
+      const cacheKey = `${tier}|${legendName}`;
+      if (LEGEND_TREND_CACHE[cacheKey]) {
+        refreshTrendCardSelection();
+        return;
+      }
+
+      try {
+        const filename = `legend_tables_${tier}/${safeFilename(legendName)}_card_trend.json`;
+        const response = await fetch(filename);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        LEGEND_TREND_CACHE[cacheKey] = await response.json();
+        refreshTrendCardSelection();
+      } catch (err) {
+        document.getElementById('trend-chart-container').innerHTML = `<p style="color:var(--text-muted); font-size:14px; margin:0;">
+          Couldn't load ${tierDisplayName(tier)} trend data for this legend (${err.message}).
+        </p>`;
+      }
+    }
+
+    createCombobox({
+      inputEl: document.getElementById('trend-legend-search'),
+      listEl: document.getElementById('trend-legend-options-list'),
+      items: LEGENDS.map(l => l.name),
+      isEnabled: (name) => LEGENDS.find(l => l.name === name).loaded,
+      onSelect: (legendName) => loadTrendLegend(legendName, currentTrendTier),
+    });
+
+    document.querySelectorAll('#tab-trends .trendmode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#tab-trends .trendmode-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        trendMode = btn.dataset.mode;
+
+        document.getElementById('trend-legend-row').hidden = trendMode !== 'legend';
+        document.getElementById('trend-caption').textContent = trendMode === 'legend'
+          ? `Shows this card's performance for this legend specifically — the same cards as its Card Stats tab, tracked over time instead of pooled into one number.`
+          : `Shows this card's performance across every legend and every tournament combined — a bigger-sample, general trend view, separate from the per-legend breakdown below.`;
+
+        if (trendMode === 'legend' && !LEGEND_TREND_CACHE[`${currentTrendTier}|${currentTrendLegendName}`]) {
+          loadTrendLegend(document.getElementById('trend-legend-search').value, currentTrendTier);
+        } else {
+          refreshTrendCardSelection();
+        }
+      });
+    });
+
+    document.querySelectorAll('#tab-trends .tier-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#tab-trends .tier-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentTrendTier = btn.dataset.tier;
+
+        if (trendMode === 'legend') {
+          loadTrendLegend(document.getElementById('trend-legend-search').value, currentTrendTier);
+        } else {
+          loadTrendAll(currentTrendTier);
+        }
+      });
+    });
+
+    // --- Tab switching ---
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        document.getElementById('tab-cardstats').hidden = btn.dataset.tab !== 'cardstats';
+        document.getElementById('tab-trends').hidden = btn.dataset.tab !== 'trends';
+        document.getElementById('tab-bestdecks').hidden = btn.dataset.tab !== 'bestdecks';
+        document.getElementById('tab-gallery').hidden = btn.dataset.tab !== 'gallery';
+      });
+    });
+
+    // --- Card Gallery tab ---
+    // Loads the real 928-card dataset from card_gallery_data.json, and
+    // renders it in batches as the user scrolls, rather than all at once
+    let ALL_CARDS = [];
+    let filteredCards = [];
+    let renderedCount = 0;
+    const BATCH_SIZE = 40;
+
+    async function loadGalleryData() {
+      const grid = document.getElementById('gallery-grid');
+      try {
+        const response = await fetch('card_gallery_data.json');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        ALL_CARDS = await response.json();
+        populateTypeFilter();
+        populateSetFilter();
+        applyFilters();
+      } catch (err) {
+        grid.innerHTML = `<p class="gallery-empty">
+          Couldn't load card_gallery_data.json (${err.message}).<br><br>
+          If you're opening this file directly (file://), browsers block
+          local JSON loading for security reasons - run a small local
+          server instead: open a terminal in this folder and run
+          <code>python -m http.server</code>, then visit
+          <code>http://localhost:8000/riftbound_card_lab.html</code>.
+        </p>`;
+      }
+    }
+
+    function populateSetFilter() {
+      // Sort by the real setOrder value (release chronology), not
+      // alphabetically - the current 5 sets happen to alphabetize
+      // correctly, but that's coincidence, not something to rely on
+      // for whatever set name comes next
+      const setMap = new Map(); // set name -> its setOrder
+      ALL_CARDS.forEach(card => {
+        if (!setMap.has(card.set)) setMap.set(card.set, card.setOrder);
+      });
+
+      const sortedSets = [...setMap.entries()].sort((a, b) => a[1] - b[1]);
+
+      const select = document.getElementById('gallery-set-filter');
+      sortedSets.forEach(([setName]) => {
+        const option = document.createElement('option');
+        option.value = setName;
+        option.textContent = setName;
+        select.appendChild(option);
+      });
+    }
+
+    function populateTypeFilter() {
+      // Build the dropdown from whatever type labels actually exist in
+      // the real data, rather than guessing/hardcoding a list - avoids
+      // the exact same "label text mismatch" problem we hit earlier
+      // with "Proving Grounds" vs "Origins: Proving Grounds"
+      const allTypes = new Set();
+      ALL_CARDS.forEach(card => card.cardType.forEach(t => allTypes.add(t)));
+
+      const select = document.getElementById('gallery-type-filter');
+      [...allTypes].sort().forEach(type => {
+        const option = document.createElement('option');
+        option.value = type;
+        option.textContent = type;
+        select.appendChild(option);
+      });
+    }
+
+    function cardMatchesFilters(card, query, domainFilter, setFilter, typeFilter) {
+      if (query && !card.name.toLowerCase().includes(query)) return false;
+      if (domainFilter && !card.domain.includes(domainFilter)) return false;
+      if (setFilter && card.set !== setFilter) return false;
+      if (typeFilter && !card.cardType.includes(typeFilter)) return false;
+      return true;
+    }
+
+    function applyFilters() {
+      const query = document.getElementById('gallery-search').value.trim().toLowerCase();
+      const domainFilter = document.getElementById('gallery-domain-filter').value;
+      const setFilter = document.getElementById('gallery-set-filter').value;
+      const typeFilter = document.getElementById('gallery-type-filter').value;
+
+      filteredCards = ALL_CARDS.filter(c => cardMatchesFilters(c, query, domainFilter, setFilter, typeFilter));
+      renderedCount = 0;
+      document.getElementById('gallery-grid').innerHTML = '';
+      renderNextBatch();
+    }
+
+    function cardTileHtml(card) {
+      const domainBadges = card.domain.map(d =>
+        `<span class="domain-badge ${d.toLowerCase()}">${d}</span>`
+      ).join('');
+      return `
+        <div class="gallery-card">
+          <img src="${card.image}" alt="${card.name}" loading="lazy">
+          <div class="gallery-card-info">
+            <div class="gallery-card-name">${card.name}</div>
+            <div class="gallery-card-meta">
+              <span>${card.publicCode}</span>
+              ${domainBadges}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function renderNextBatch() {
+      const grid = document.getElementById('gallery-grid');
+
+      // Remove any existing sentinel before appending new cards + a fresh one
+      const oldSentinel = document.getElementById('gallery-sentinel');
+      if (oldSentinel) oldSentinel.remove();
+
+      if (filteredCards.length === 0) {
+        grid.innerHTML = `<p class="gallery-empty">No cards match those filters.</p>`;
+        return;
+      }
+
+      const nextBatch = filteredCards.slice(renderedCount, renderedCount + BATCH_SIZE);
+      grid.insertAdjacentHTML('beforeend', nextBatch.map(cardTileHtml).join(''));
+      renderedCount += nextBatch.length;
+
+      // If there's more to show, add an invisible sentinel element at the
+      // bottom - once it scrolls into view, load the next batch
+      if (renderedCount < filteredCards.length) {
+        const sentinel = document.createElement('div');
+        sentinel.id = 'gallery-sentinel';
+        sentinel.style.gridColumn = '1 / -1';
+        grid.appendChild(sentinel);
+        galleryObserver.observe(sentinel);
+      }
+    }
+
+    const galleryObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          galleryObserver.unobserve(entry.target);
+          renderNextBatch();
+        }
+      });
+    }, { rootMargin: '400px' }); // start loading a bit before it's actually visible
+
+    document.getElementById('gallery-search').addEventListener('input', applyFilters);
+    document.getElementById('gallery-domain-filter').addEventListener('change', applyFilters);
+    document.getElementById('gallery-set-filter').addEventListener('change', applyFilters);
+    document.getElementById('gallery-type-filter').addEventListener('change', applyFilters);
+
+    loadGalleryData();
+
+    // --- Best Decks tab ---
+    // Real per-tournament best-deck data, built by BuildLegendsTable.py into
+    // legend_tables_<tier>/<legend>_best_decks.json (already sorted newest
+    // first, decklist already grouped by card_type). Tier toggle matches
+    // the Card Stats tab - fetches fresh whenever tier or legend changes.
+    let currentBestDeckTier = 'all';
+
+    createCombobox({
+      inputEl: document.getElementById('bestdeck-legend-search'),
+      listEl: document.getElementById('bestdeck-legend-options-list'),
+      items: LEGENDS.map(l => l.name),
+      isEnabled: (name) => LEGENDS.find(l => l.name === name).loaded,
+      onSelect: loadBestDecks,
+    });
+
+    document.querySelectorAll('#tab-bestdecks .tier-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#tab-bestdecks .tier-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentBestDeckTier = btn.dataset.tier;
+        loadBestDecks(document.getElementById('bestdeck-legend-search').value);
+      });
+    });
+
+    async function loadBestDecks(legendName) {
+      const container = document.getElementById('best-decks-list');
+      container.innerHTML = `<p style="color:var(--text-muted); font-size:14px;">Loading…</p>`;
+
+      try {
+        const filename = `legend_tables_${currentBestDeckTier}/${safeFilename(legendName)}_best_decks.json`;
+        const response = await fetch(filename);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const decks = await response.json();
+        renderBestDecks(decks);
+      } catch (err) {
+        container.innerHTML = `<p style="color:var(--text-muted); font-size:14px;">
+          Couldn't load ${tierDisplayName(currentBestDeckTier)} best decks for this legend (${err.message}).
+        </p>`;
+      }
+    }
+
+    function renderBestDecks(decks) {
+      const container = document.getElementById('best-decks-list');
+
+      if (!decks || decks.length === 0) {
+        container.innerHTML = `<p style="color:var(--text-muted); font-size:14px;">No best-deck data loaded yet for this legend.</p>`;
+        return;
+      }
+
+      container.innerHTML = decks.map((deck, i) => {
+        const bodyId = `best-deck-body-${i}`;
+        const decklistHtml = Object.entries(deck.decklist).map(([group, cards]) => `
+              <div class="decklist-group">
+                <h4>${group}</h4>
+                <div class="decklist-cards">
+                  ${cards.map(c => `${c.qty}x ${c.name}`).join('<br>')}
+                </div>
+              </div>`).join('');
+
+        return `
+          <div class="best-deck-card">
+            <div class="best-deck-header" onclick="document.getElementById('${bodyId}').classList.toggle('collapsed')">
+              <div>
+                <div class="best-deck-title">${deck.tournament} — ${deck.date}</div>
+                <div class="best-deck-sub">Piloted by ${deck.player || 'Unknown player'}</div>
+              </div>
+              <span class="best-deck-badge">Placed #${deck.rank} of ${deck.players}</span>
+            </div>
+            <div id="${bodyId}" class="best-deck-body collapsed">
+              ${decklistHtml}
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    loadBestDecks(document.getElementById('bestdeck-legend-search').value);
+
+    // --- Card Stats: real data, fetched per legend, with a City
+    // Challenge / Open TIER toggle (changes which folder to fetch from)
+    // and an All Players / Top 50% / Top 25% SCOPE toggle (filters
+    // within whatever's already loaded, no extra fetch needed) ---
+    let SCOPED_DATA = null;   // {all: [...], top50: [...], top25: [...], copies: [...]}
+    let COPIES_LOOKUP = {};   // "card_name|zone" -> {0: row, 1: row, 2: row, 3: row}
+    let currentScope = 'all';
+    let currentTier = 'all'; // matches folder suffix: legend_tables_all / legend_tables_city / legend_tables_open
+    let currentZone = 'all';  // 'all' | 'Mainboard' | 'Sideboard' - filters within whatever's loaded, no fetch needed
+    let currentLegendName = null;
+
+    function buildCopiesLookup() {
+      COPIES_LOOKUP = {};
+      const copyRows = (SCOPED_DATA && SCOPED_DATA.copies) || [];
+      copyRows.forEach(row => {
+        const key = `${row.card_name}|${row.zone}`;
+        if (!COPIES_LOOKUP[key]) COPIES_LOOKUP[key] = {};
+        COPIES_LOOKUP[key][row.quantity] = row;
+      });
+    }
+
+    function copiesCellHtml(cardName, zone) {
+      const byQuantity = COPIES_LOOKUP[`${cardName}|${zone}`];
+      if (!byQuantity) return '<span style="color:var(--text-muted)">—</span>';
+
+      const segments = [0, 1, 2, 3].map(q => {
+        const share = byQuantity[q] ? byQuantity[q].share_of_decks_playing_card : 0;
+        return `<span class="copies-seg q${q}" style="width:${(share * 100).toFixed(1)}%" title="${q}x: ${(share * 100).toFixed(0)}% of decks"></span>`;
+      }).join('');
+
+      // Full breakdown, one line per quantity actually seen for this
+      // card+zone (skips quantities that never occur, e.g. a card that
+      // never ran 3x won't show a "3x 0%" line)
+      const breakdownLines = [1, 2, 3]
+        .filter(q => byQuantity[q])
+        .map(q => `<div><span class="dot q${q}"></span>${q}x <span class="pct">${(byQuantity[q].share_of_decks_playing_card * 100).toFixed(0)}%</span></div>`)
+        .join('');
+
+      return `
+        <div class="copies-cell">
+          <span class="copies-bar">${segments}</span>
+          <div class="copies-breakdown">${breakdownLines}</div>
+        </div>`;
+    }
+
+    function safeFilename(name) {
+      // Mirrors the Python safe_filename() function exactly, so the
+      // filenames line up: strip punctuation, replace spaces with _
+      return name.replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '_');
+    }
+
+    async function loadCardStats(legendName) {
+      currentLegendName = legendName;
+      const tbody = document.getElementById('card-table-body');
+      document.getElementById('cardstats-legend-title').textContent = legendName;
+
+      try {
+        const folder = `legend_tables_${currentTier}`;
+        const filename = `${folder}/${safeFilename(legendName)}_scoped.json`;
+        const response = await fetch(filename);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        SCOPED_DATA = await response.json();
+        buildCopiesLookup();
+        renderRows(currentSort.key, currentSort.dir);
+        updateArrows();
+      } catch (err) {
+        SCOPED_DATA = null;
+        const hint = err.message.includes('404')
+          ? `No ${tierDisplayName(currentTier)} data for this legend yet - that's expected if it wasn't played (or barely played) in that tier.`
+          : `Make sure you're running this through a local server, not opening the file directly.`;
+        tbody.innerHTML = `<tr><td colspan="5" style="color:var(--text-muted); padding:20px;">
+          Couldn't load ${tierDisplayName(currentTier)} stats for this legend (${err.message}).<br>${hint}
+        </td></tr>`;
+      }
+    }
+
+    function playRateColor(ratio) {
+      // Interpolates between the theme's --red and --green (matching the
+      // rest of the site's palette) rather than a generic hue sweep, so a
+      // card played in every deck reads pure green and a barely-played one
+      // reads pure red, with a smooth blend between.
+      const red = [0xE5, 0x53, 0x4B];
+      const green = [0x5F, 0xBF, 0x77];
+      const [r, g, b] = red.map((c, i) => Math.round(c + (green[i] - c) * ratio));
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    function renderRows(sortKey, dir) {
+      if (!SCOPED_DATA) return;
+      let cardData = SCOPED_DATA[currentScope] || [];
+      if (currentZone !== 'all') {
+        cardData = cardData.filter(c => c.zone === currentZone);
+      }
+
+      document.getElementById('cardstats-deck-count').innerHTML =
+        `<strong>${cardData.length ? new Set(cardData.map(c => c.card_name)).size : 0}</strong> unique cards shown`;
+
+      const sorted = [...cardData].sort((a, b) => {
+        const av = a[sortKey];
+        const bv = b[sortKey];
+        // Nulls (e.g. avg_percentile_without for a card every deck runs)
+        // always sort last, regardless of direction
+        if (av === null && bv === null) return 0;
+        if (av === null) return 1;
+        if (bv === null) return -1;
+        if (typeof av === 'string') {
+          return dir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+        }
+        return dir === 'asc' ? av - bv : bv - av;
+      });
+
+      const tbody = document.getElementById('card-table-body');
+
+      if (sorted.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="color:var(--text-muted); padding:20px;">No decks fall into this scope for this legend (small sample size).</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = sorted.map(card => {
+        const totalDecks = card.decks_played + card.decks_without;
+        const playRatePct = (card.play_rate * 100).toFixed(1);
+
+        const withCell = card.avg_percentile_with !== null ? card.avg_percentile_with.toFixed(1) + '%' : '—';
+
+        const withoutCell = card.avg_percentile_without === null
+          ? `<span style="color:var(--text-muted);">— every deck runs it</span>`
+          : `${card.avg_percentile_without.toFixed(1)}%`;
+
+        // Only badge Sideboard rows - Mainboard is the assumed default, and
+        // when currentZone is already filtered to one zone the badge would
+        // just be redundant on every row, so only show it in the "All" view
+        const zoneBadge = (currentZone === 'all' && card.zone === 'Sideboard')
+          ? `<span class="zone-badge">Sideboard</span>` : '';
+
+        return `
+          <tr>
+            <td><span class="card-name">${card.card_name}</span>${zoneBadge}<span class="card-type">${card.card_type}</span></td>
+            <td class="num"><span class="playrate-bar"><span class="playrate-fill" style="width:${playRatePct}%"></span></span>${playRatePct}%<span class="playrate-count" style="color:${playRateColor(card.play_rate)};">${card.decks_played}/${totalDecks}</span></td>
+            <td class="num">${withCell}</td>
+            <td class="num">${withoutCell}</td>
+            <td class="num">${copiesCellHtml(card.card_name, card.zone)}</td>
+          </tr>`;
+      }).join('');
+    }
+
+    // Scoped to #tab-cardstats - Best Decks and Performance Trends have
+    // their own separate .tier-btn toggles (same look, independent state)
+    document.querySelectorAll('#tab-cardstats .tier-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#tab-cardstats .tier-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentTier = btn.dataset.tier;
+        // Tier change means a genuinely different dataset - needs a
+        // fresh fetch, not just a re-render like the scope toggle does
+        if (currentLegendName) loadCardStats(currentLegendName);
+      });
+    });
+
+    document.querySelectorAll('.scope-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.scope-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentScope = btn.dataset.scope;
+        renderRows(currentSort.key, currentSort.dir);
+      });
+    });
+
+    document.querySelectorAll('.zone-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.zone-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentZone = btn.dataset.zone;
+        renderRows(currentSort.key, currentSort.dir);
+      });
+    });
+
+    let currentSort = { key: 'play_rate', dir: 'desc' };
+
+
+    function updateArrows() {
+      document.querySelectorAll('thead th').forEach(th => {
+        const arrow = th.querySelector('.arrow');
+        if (!arrow) return;
+        if (th.dataset.key === currentSort.key) {
+          arrow.textContent = currentSort.dir === 'asc' ? '▲' : '▼';
+          arrow.classList.add('active');
+        } else {
+          arrow.textContent = '↕';
+          arrow.classList.remove('active');
+        }
+      });
+    }
+
+    document.querySelectorAll('thead th[data-key]').forEach(th => {
+      th.querySelector('.sort-btn').addEventListener('click', () => {
+        const key = th.dataset.key;
+        if (currentSort.key === key) {
+          currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
+        } else {
+          currentSort = { key, dir: th.dataset.defaultDir };
+        }
+        renderRows(currentSort.key, currentSort.dir);
+        updateArrows();
+      });
+    });
+
+    loadCardStats(document.getElementById('legend-search').value);
+    updateArrows();
+  </script>
+</body>
+</html>
