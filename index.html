@@ -31,7 +31,7 @@
   }
 
   .wrap {
-    max-width: 920px;
+    max-width: 1180px;
     margin: 0 auto;
     padding: 48px 24px 80px;
   }
@@ -671,8 +671,8 @@
   }
 
   .rec-section { margin-bottom: 36px; }
-  .rec-scroll { overflow-x: auto; }
   .rec-table thead th { padding: 0 10px 10px; }
+  .rec-table .rec-sub { white-space: normal; }
   .rec-table tbody td { padding: 12px 10px; }
   .rec-table td:first-child { min-width: 150px; }
 
@@ -763,7 +763,6 @@
       <section class="rec-section">
         <h3 class="section-title">Recommended Cards</h3>
         <p class="section-note">Top 10 cards whose decks placed clearly better than decks that didn't run them at all. Uses every tournament, weighted by field size, so each Regional/National Open deck counts about 10x a City Challenge deck. Not affected by the filters below. Each card is checked two ways, run in the mainboard or run in the sideboard, and the better one is suggested. Ranked by an adjusted edge that pulls small samples toward zero, so a huge edge from 6 decks ranks below a solid edge from 70. Needs at least 5 decks on each side. The suggested copy count is the most common one, unless another count placed clearly better. Shows correlation, not proof: strong players or a specific archetype can also drive the numbers.</p>
-        <div class="rec-scroll">
         <table class="rec-table">
           <thead>
             <tr>
@@ -777,7 +776,6 @@
           </thead>
           <tbody id="rec-table-body"></tbody>
         </table>
-        </div>
       </section>
 
       <h3 class="section-title">All Cards</h3>
