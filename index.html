@@ -762,7 +762,7 @@
 
       <section class="rec-section">
         <h3 class="section-title">Recommended Cards</h3>
-        <p class="section-note">Top 10 cards whose decks placed clearly better than decks that didn't run them at all. Uses every tournament, weighted by field size, so each Regional/National Open deck counts about 10x a City Challenge deck. Not affected by the filters below. Each card is checked two ways, run in the mainboard or run in the sideboard, and the better one is suggested. Ranked by an adjusted edge that pulls small samples toward zero, so a huge edge from 6 decks ranks below a solid edge from 70. Needs at least 5 decks on each side. The suggested copy count is the most common one, unless another count placed clearly better. Shows correlation, not proof: strong players or a specific archetype can also drive the numbers.</p>
+        <p class="section-note">Top 10 cards, played in at least 5% of decks, whose decks placed clearly better than decks that didn't run them at all. Uses every tournament, weighted by field size, so each Regional/National Open deck counts about 10x a City Challenge deck. Not affected by the filters below. Each card is checked two ways, run in the mainboard or run in the sideboard, and the better one is suggested. Ranked by an adjusted edge that pulls small samples toward zero, so a huge edge from 6 decks ranks below a solid edge from 70. Needs at least 5 decks on each side. The suggested copy count is the most common one, unless another count placed clearly better. Shows correlation, not proof: strong players or a specific archetype can also drive the numbers.</p>
         <table class="rec-table">
           <thead>
             <tr>
@@ -775,6 +775,22 @@
             </tr>
           </thead>
           <tbody id="rec-table-body"></tbody>
+        </table>
+
+        <h3 class="section-title">Niche Picks</h3>
+        <p class="section-note">Top 5 cards played in 1% to under 5% of decks, ranked the same way. Smaller samples, so treat these as ideas worth testing rather than sure things.</p>
+        <table class="rec-table">
+          <thead>
+            <tr>
+              <th>Card</th>
+              <th class="num">Play rate</th>
+              <th class="num">Placement With</th>
+              <th class="num">Placement Without</th>
+              <th class="num">Edge</th>
+              <th class="num">Suggested</th>
+            </tr>
+          </thead>
+          <tbody id="niche-table-body"></tbody>
         </table>
       </section>
 
@@ -1610,6 +1626,9 @@
     const REC_MIN_Z = 1.28;
     const REC_MIN_DECKS = 5;
     const REC_LIMIT = 10;
+    const NICHE_LIMIT = 5;
+    const REC_MIN_PLAY_RATE = 0.05;
+    const NICHE_MIN_PLAY_RATE = 0.01;
     const ZONE_LABELS = { Mainboard: 'all copies mainboard', Sideboard: 'some or all copies sideboard' };
 
     function shrink(estimate, se) {
@@ -1644,8 +1663,8 @@
     async function loadRecommendations(legendName) {
       if (legendName === recLegendName) return;
       recLegendName = legendName;
-      const tbody = document.getElementById('rec-table-body');
-      tbody.innerHTML = `<tr><td colspan="6" style="color:var(--text-muted); padding:20px;">Loading…</td></tr>`;
+      const setBoth = html => ['rec-table-body', 'niche-table-body'].forEach(id => { document.getElementById(id).innerHTML = html; });
+      setBoth(`<tr><td colspan="6" style="color:var(--text-muted); padding:20px;">Loading…</td></tr>`);
       try {
         const response = await fetch(`legend_tables_all/${safeFilename(legendName)}_recs.json`, { cache: 'no-cache' });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -1656,16 +1675,15 @@
       } catch (err) {
         if (legendName !== recLegendName) return;
         REC_DATA = null;
-        tbody.innerHTML = `<tr><td colspan="6" style="color:var(--text-muted); padding:20px;">Couldn't load recommendations for this legend (${err.message}).</td></tr>`;
+        setBoth(`<tr><td colspan="6" style="color:var(--text-muted); padding:20px;">Couldn't load recommendations for this legend (${err.message}).</td></tr>`);
       }
     }
 
     function renderRecommendations() {
-      const tbody = document.getElementById('rec-table-body');
       const recs = REC_DATA || [];
       const zones = ['Mainboard', 'Sideboard'];
 
-      const picks = recs
+      const ranked = recs
         .filter(r => r.without.decks >= REC_MIN_DECKS)
         .map(r => {
           const options = zones
@@ -1673,15 +1691,22 @@
             .map(zone => ({ zone, stats: r.zones[zone], ...compare(r.zones[zone], r.without) }))
             .sort((a, b) => b.score - a.score);
           if (options.length === 0) return null;
-          const otherZone = zones.length > 1 ? (['Mainboard', 'Sideboard'].find(z => z !== options[0].zone)) : null;
-          return { rec: r, best: options[0], otherZone };
+          const otherZone = zones.find(z => z !== options[0].zone);
+          return { rec: r, best: options[0], otherZone, playRate: options[0].stats.decks / r.total_decks };
         })
         .filter(p => p && p.best.z >= REC_MIN_Z)
-        .sort((a, b) => b.best.score - a.best.score)
-        .slice(0, REC_LIMIT);
+        .sort((a, b) => b.best.score - a.best.score);
 
+      renderRecTable('rec-table-body', ranked.filter(p => p.playRate >= REC_MIN_PLAY_RATE).slice(0, REC_LIMIT),
+        'No card has a clear enough edge for this legend yet. More tournament data should help.');
+      renderRecTable('niche-table-body', ranked.filter(p => p.playRate >= NICHE_MIN_PLAY_RATE && p.playRate < REC_MIN_PLAY_RATE).slice(0, NICHE_LIMIT),
+        'No niche card (1% to under 5% play rate) has a clear enough edge for this legend yet.');
+    }
+
+    function renderRecTable(tbodyId, picks, emptyMessage) {
+      const tbody = document.getElementById(tbodyId);
       if (picks.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="color:var(--text-muted); padding:20px;">No card has a clear enough edge for this legend yet. More tournament data should help.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="color:var(--text-muted); padding:20px;">${emptyMessage}</td></tr>`;
         return;
       }
 
