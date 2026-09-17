@@ -654,6 +654,43 @@
 
   td.num { text-align: right; white-space: nowrap; }
 
+  .section-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    margin: 8px 0 6px;
+  }
+
+  .section-note {
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.5;
+    max-width: 780px;
+    margin: 0 0 14px;
+  }
+
+  .rec-section { margin-bottom: 36px; }
+  .rec-scroll { overflow-x: auto; }
+  .rec-table thead th { padding: 0 10px 10px; }
+  .rec-table tbody td { padding: 12px 10px; }
+  .rec-table td:first-child { min-width: 150px; }
+
+  .rec-sub {
+    display: block;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 400;
+    margin-top: 2px;
+  }
+
+  .rec-edge { font-weight: 600; color: var(--green); }
+  .rec-conf { font-size: 10px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; }
+  .rec-conf.strong { color: var(--green); }
+  .rec-conf.solid { color: var(--teal); }
+  .rec-conf.promising { color: var(--gold); }
+  .rec-pick { font-weight: 600; }
+
   .playrate-bar {
     width: 70px;
     height: 6px;
@@ -723,6 +760,27 @@
         <span><strong>Set 4</strong> Vendetta</span>
       </div>
 
+      <section class="rec-section">
+        <h3 class="section-title">Recommended Cards</h3>
+        <p class="section-note">Top 10 cards whose decks placed clearly better than decks that didn't run them at all. Uses every tournament, weighted by field size, so each Regional/National Open deck counts about 10x a City Challenge deck. Not affected by the filters below. Each card is checked two ways, run in the mainboard or run in the sideboard, and the better one is suggested. Ranked by an adjusted edge that pulls small samples toward zero, so a huge edge from 6 decks ranks below a solid edge from 70. Needs at least 5 decks on each side. The suggested copy count is the most common one, unless another count placed clearly better. Shows correlation, not proof: strong players or a specific archetype can also drive the numbers.</p>
+        <div class="rec-scroll">
+        <table class="rec-table">
+          <thead>
+            <tr>
+              <th>Card</th>
+              <th class="num">Play rate</th>
+              <th class="num">Placement With</th>
+              <th class="num">Placement Without</th>
+              <th class="num">Edge</th>
+              <th class="num">Suggested</th>
+            </tr>
+          </thead>
+          <tbody id="rec-table-body"></tbody>
+        </table>
+        </div>
+      </section>
+
+      <h3 class="section-title">All Cards</h3>
       <div class="tier-toggle">
         <button class="tier-btn active" data-tier="all">All Tournaments</button>
         <button class="tier-btn" data-tier="city">City Challenge</button>
@@ -1510,6 +1568,7 @@
     }
 
     async function loadCardStats(legendName) {
+      loadRecommendations(legendName);
       currentLegendName = legendName;
       const tbody = document.getElementById('card-table-body');
       document.getElementById('cardstats-legend-title').textContent = legendName;
@@ -1517,7 +1576,7 @@
       try {
         const folder = `legend_tables_${currentTier}`;
         const filename = `${folder}/${safeFilename(legendName)}_scoped.json`;
-        const response = await fetch(filename);
+        const response = await fetch(filename, { cache: 'no-cache' });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         SCOPED_DATA = await response.json();
         buildCopiesLookup();
@@ -1545,12 +1604,131 @@
       return `rgb(${r}, ${g}, ${b})`;
     }
 
+    // Prior spread of real card effects, in placement points: most cards
+    // move a deck's placement by a few points, very few by 20+. Estimates
+    // with a large standard error get pulled toward 0 much harder than
+    // precise ones.
+    const REC_PRIOR_SD = 6;
+    const REC_MIN_Z = 1.28;
+    const REC_MIN_DECKS = 5;
+    const REC_LIMIT = 10;
+    const ZONE_LABELS = { Mainboard: 'all copies mainboard', Sideboard: 'some or all copies sideboard' };
+
+    function shrink(estimate, se) {
+      return estimate * REC_PRIOR_SD ** 2 / (REC_PRIOR_SD ** 2 + se ** 2);
+    }
+
+    function compare(a, b) {
+      const diff = a.avg - b.avg;
+      const se = Math.hypot(a.se, b.se);
+      return { diff, se, z: diff / se, score: shrink(diff, se) };
+    }
+
+    // Most common total copy count, unless another count placed clearly better
+    function bestCopyCount(copies) {
+      if (!copies || copies.length === 0) return null;
+      const common = copies.reduce((a, b) => (b.decks > a.decks ? b : a));
+      let best = { ...common, beats: null, score: 0 };
+      copies.forEach(c => {
+        if (c === common || c.decks < REC_MIN_DECKS) return;
+        const cmp = compare(c, common);
+        if (cmp.z >= REC_MIN_Z && cmp.score > best.score) best = { ...c, beats: common.quantity, score: cmp.score };
+      });
+      return best;
+    }
+
+    // Each zone option ("run it mainboard", "run it sideboard") is compared
+    // against decks that don't run the card at all - never against decks
+    // that just put it in the other zone.
+    let REC_DATA = null;
+    let recLegendName = null;
+
+    async function loadRecommendations(legendName) {
+      if (legendName === recLegendName) return;
+      recLegendName = legendName;
+      const tbody = document.getElementById('rec-table-body');
+      tbody.innerHTML = `<tr><td colspan="6" style="color:var(--text-muted); padding:20px;">Loading…</td></tr>`;
+      try {
+        const response = await fetch(`legend_tables_all/${safeFilename(legendName)}_recs.json`, { cache: 'no-cache' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        if (legendName !== recLegendName) return;
+        REC_DATA = data;
+        renderRecommendations();
+      } catch (err) {
+        if (legendName !== recLegendName) return;
+        REC_DATA = null;
+        tbody.innerHTML = `<tr><td colspan="6" style="color:var(--text-muted); padding:20px;">Couldn't load recommendations for this legend (${err.message}).</td></tr>`;
+      }
+    }
+
+    function renderRecommendations() {
+      const tbody = document.getElementById('rec-table-body');
+      const recs = REC_DATA || [];
+      const zones = ['Mainboard', 'Sideboard'];
+
+      const picks = recs
+        .filter(r => r.without.decks >= REC_MIN_DECKS)
+        .map(r => {
+          const options = zones
+            .filter(zone => r.zones[zone].decks >= REC_MIN_DECKS)
+            .map(zone => ({ zone, stats: r.zones[zone], ...compare(r.zones[zone], r.without) }))
+            .sort((a, b) => b.score - a.score);
+          if (options.length === 0) return null;
+          const otherZone = zones.length > 1 ? (['Mainboard', 'Sideboard'].find(z => z !== options[0].zone)) : null;
+          return { rec: r, best: options[0], otherZone };
+        })
+        .filter(p => p && p.best.z >= REC_MIN_Z)
+        .sort((a, b) => b.best.score - a.best.score)
+        .slice(0, REC_LIMIT);
+
+      if (picks.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="color:var(--text-muted); padding:20px;">No card has a clear enough edge for this legend yet. More tournament data should help.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = picks.map(({ rec, best, otherZone }) => {
+        const total = rec.total_decks;
+        const [confClass, confLabel] = best.z >= 2.33 ? ['strong', 'Strong'] : best.z >= 1.64 ? ['solid', 'Solid'] : ['promising', 'Promising'];
+        const playRate = best.stats.decks / total;
+        const anyRate = rec.with.decks / total;
+        const role = anyRate >= 0.8 ? 'Staple' : anyRate >= 0.2 ? 'Flex pick' : 'Tech pick';
+
+        const copies = bestCopyCount(rec.copies[best.zone]);
+        const pickLabel = copies ? `${best.zone} · ${copies.quantity}x` : best.zone;
+        const copiesSub = copies
+          ? `<span class="rec-sub">${copies.beats ? `${copies.quantity}x beats ${copies.beats}x` : `${copies.quantity}x most common`} · ${copies.avg.toFixed(1)}% avg, n = ${copies.decks}</span>`
+          : '';
+
+        let zoneNote = '';
+        if (otherZone) {
+          const other = rec.zones[otherZone];
+          zoneNote = other.decks > 0
+            ? `<span class="rec-sub">${otherZone}: ${other.avg - rec.without.avg >= 0 ? '+' : ''}${(other.avg - rec.without.avg).toFixed(1)} edge, n = ${other.decks}</span>`
+            : `<span class="rec-sub">never run ${otherZone.toLowerCase()}</span>`;
+        }
+
+        const withoutColor = ratioColor(rec.without.decks / total);
+
+        return `
+          <tr>
+            <td><span class="card-name">${rec.card_name}</span><span class="card-type">${rec.card_type} · ${role}, in ${(anyRate * 100).toFixed(0)}% of decks</span></td>
+            <td class="num">${(playRate * 100).toFixed(1)}%<span class="playrate-count" style="color:${ratioColor(playRate)};">${best.stats.decks}/${total}</span><span class="rec-sub">${ZONE_LABELS[best.zone]}</span></td>
+            <td class="num">${best.stats.avg.toFixed(1)}%</td>
+            <td class="num"><span style="color:${withoutColor};">${rec.without.avg.toFixed(1)}%</span><span class="playrate-count" style="color:${withoutColor};">n = ${rec.without.decks}/${total}</span><span class="rec-sub">not run at all</span></td>
+            <td class="num"><span class="rec-edge">+${best.diff.toFixed(1)}</span><span class="rec-sub">adjusted +${best.score.toFixed(1)} · <span class="rec-conf ${confClass}">${confLabel}</span></span></td>
+            <td class="num"><span class="rec-pick">${pickLabel}</span>${copiesSub}${zoneNote}</td>
+          </tr>`;
+      }).join('');
+    }
+
     function renderRows(sortKey, dir) {
       if (!SCOPED_DATA) return;
       let cardData = SCOPED_DATA[currentScope] || [];
       if (currentZone !== 'all') {
         cardData = cardData.filter(c => c.zone === currentZone);
       }
+
 
       document.getElementById('cardstats-deck-count').innerHTML =
         `<strong>${cardData.length ? new Set(cardData.map(c => c.card_name)).size : 0}</strong> unique cards shown`;
