@@ -1353,6 +1353,9 @@
     // played less than that even split but still places above 50%.
     const LEGEND_MIN_DECKS = 10;
     const SLEEPER_MIN_PLACEMENT = 52;
+    // Meta legends are already popular, so they need a clearer edge than a
+    // sleeper before the badge means anything
+    const META_MIN_PLACEMENT = 54;
     let legendOverviewTier = 'all';
     const LEGEND_OVERVIEW_CACHE = {};
     let legendSort = { key: 'play_rate', dir: 'desc' };
@@ -1374,7 +1377,7 @@
     function isMeta(legend) {
       return legend.decks >= LEGEND_MIN_DECKS
         && legend.play_index >= 1
-        && legend.adjusted_avg >= SLEEPER_MIN_PLACEMENT;
+        && legend.adjusted_avg >= META_MIN_PLACEMENT;
     }
 
     async function loadLegendOverview(tier) {
@@ -1406,7 +1409,7 @@
         `${data.legend_count} legends across <strong>${data.total_decks}</strong> ${tierDisplayName(legendOverviewTier)} decks. `
         + `An even split would give each legend <strong>${(data.expected_play_rate * 100).toFixed(1)}%</strong> of decks, and an average deck places at <strong>50%</strong>. `
         + `Placement is shrunk toward 50% for legends with few decks. Top 50% / Top 25% are that legend's own best-placing decks, taken per tournament and then pooled by field size, so one event can't supply the whole slice. Only events where the legend had 4+ decks count, so the slice really is a quarter or a half of the decks it is measured against - that smaller pool is what the n values compare to. `
-        + `Sleeper score rewards placing above 50% while being played less than an even split. Legends with ${LEGEND_MIN_DECKS}+ decks placing at ${SLEEPER_MIN_PLACEMENT}%+ are badged Meta when played at or above an even split, Sleeper when played below it.`;
+        + `Sleeper score rewards placing above 50% while being played less than an even split. Legends with ${LEGEND_MIN_DECKS}+ decks get badged Meta at ${META_MIN_PLACEMENT}%+ placement when played at or above an even split, or Sleeper at ${SLEEPER_MIN_PLACEMENT}%+ when played below it.`;
 
       const rows = [...data.legends].sort((a, b) => {
         const key = legendSort.key;
