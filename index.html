@@ -691,6 +691,20 @@
   .rec-conf.promising { color: var(--gold); }
   .rec-pick { font-weight: 600; }
 
+  .meta-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    border-radius: 4px;
+    padding: 1px 5px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
   .sleeper-badge {
     display: inline-block;
     font-size: 10px;
@@ -1355,6 +1369,14 @@
         && legend.adjusted_avg >= SLEEPER_MIN_PLACEMENT;
     }
 
+    // Same placement bar as a sleeper, but played at least an even split's
+    // worth: the legends people already know are good
+    function isMeta(legend) {
+      return legend.decks >= LEGEND_MIN_DECKS
+        && legend.play_index >= 1
+        && legend.adjusted_avg >= SLEEPER_MIN_PLACEMENT;
+    }
+
     async function loadLegendOverview(tier) {
       const tbody = document.getElementById('legend-overview-body');
       if (LEGEND_OVERVIEW_CACHE[tier]) return renderLegendOverview();
@@ -1384,7 +1406,7 @@
         `${data.legend_count} legends across <strong>${data.total_decks}</strong> ${tierDisplayName(legendOverviewTier)} decks. `
         + `An even split would give each legend <strong>${(data.expected_play_rate * 100).toFixed(1)}%</strong> of decks, and an average deck places at <strong>50%</strong>. `
         + `Placement is shrunk toward 50% for legends with few decks. Top 50% / Top 25% are that legend's own best-placing decks, taken per tournament and then pooled by field size, so one event can't supply the whole slice. Only events where the legend had 4+ decks count, so the slice really is a quarter or a half of the decks it is measured against - that smaller pool is what the n values compare to. `
-        + `Sleeper score rewards placing above 50% while being played less than an even split; a legend needs ${LEGEND_MIN_DECKS}+ decks to get the badge.`;
+        + `Sleeper score rewards placing above 50% while being played less than an even split. Legends with ${LEGEND_MIN_DECKS}+ decks placing at ${SLEEPER_MIN_PLACEMENT}%+ are badged Meta when played at or above an even split, Sleeper when played below it.`;
 
       const rows = [...data.legends].sort((a, b) => {
         const key = legendSort.key;
@@ -1401,7 +1423,7 @@
         const placementColor = ratioColor(Math.min(Math.max((l.adjusted_avg - 35) / 30, 0), 1));
         return `
           <tr>
-            <td><span class="card-name">${l.legend_name}</span>${sleeper ? '<span class="sleeper-badge">Sleeper</span>' : ''}<span class="card-type">${l.decks} decks${l.sliceable_decks < l.decks ? `, ${l.sliceable_decks} at 4+ deck events` : ''}</span></td>
+            <td><span class="card-name">${l.legend_name}</span>${sleeper ? '<span class="sleeper-badge">Sleeper</span>' : ''}${isMeta(l) ? '<span class="meta-badge">Meta</span>' : ''}<span class="card-type">${l.decks} decks${l.sliceable_decks < l.decks ? `, ${l.sliceable_decks} at 4+ deck events` : ''}</span></td>
             <td class="num"><span style="color:${playColor};">${(l.play_rate * 100).toFixed(1)}%</span><span class="rec-sub">${l.play_index.toFixed(1)}x an even split</span></td>
             <td class="num"><span style="color:${placementColor};">${l.adjusted_avg.toFixed(1)}%</span><span class="rec-sub">raw ${l.avg.toFixed(1)}%</span></td>
             <td class="num">${sliceCell(l.top50, l.sliceable_decks)}</td>
