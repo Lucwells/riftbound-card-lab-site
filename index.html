@@ -232,6 +232,42 @@
     border: 1px solid var(--border);
     border-radius: 8px;
     overflow: hidden;
+    cursor: zoom-in;
+  }
+
+  .gallery-card:hover { border-color: var(--teal); }
+
+  /* Clicking a card enlarges it here; clicking anywhere outside closes */
+  .lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.82);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    z-index: 50;
+    cursor: zoom-out;
+  }
+
+  .lightbox[hidden] { display: none; }
+
+  .lightbox img {
+    max-width: min(560px, 90vw);
+    max-height: 90vh;
+    border-radius: 12px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+    cursor: default;
+  }
+
+  .lightbox-caption {
+    position: absolute;
+    bottom: 18px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
   }
 
   .gallery-card img {
@@ -990,6 +1026,10 @@
       <div class="legend-caption">928 unique playable cards, base printings only (no alt-art or token duplicates). Loads in batches of 40 as you scroll.</div>
 
       <div id="gallery-grid" class="gallery-grid"></div>
+      <div id="card-lightbox" class="lightbox" hidden>
+        <img id="lightbox-img" src="" alt="">
+        <div class="lightbox-caption" id="lightbox-caption"></div>
+      </div>
     </div>
 
     <footer>
@@ -1571,7 +1611,7 @@
         `<span class="domain-badge ${d.toLowerCase()}">${d}</span>`
       ).join('');
       return `
-        <div class="gallery-card">
+        <div class="gallery-card" data-image="${card.image}" data-name="${card.name}" data-code="${card.publicCode}">
           <img src="${card.image}" alt="${card.name}" loading="lazy">
           <div class="gallery-card-info">
             <div class="gallery-card-name">${card.name}</div>
@@ -1582,6 +1622,31 @@
           </div>
         </div>`;
     }
+
+    // --- Card lightbox ---
+    // Delegated from the grid so cards added by later batches work too
+    document.getElementById('gallery-grid').addEventListener('click', (event) => {
+      const tile = event.target.closest('.gallery-card');
+      if (!tile) return;
+      document.getElementById('lightbox-img').src = tile.dataset.image;
+      document.getElementById('lightbox-img').alt = tile.dataset.name;
+      document.getElementById('lightbox-caption').textContent = `${tile.dataset.name} · ${tile.dataset.code}`;
+      document.getElementById('card-lightbox').hidden = false;
+    });
+
+    function closeLightbox() {
+      document.getElementById('card-lightbox').hidden = true;
+      document.getElementById('lightbox-img').src = '';
+    }
+
+    // Clicking the enlarged image itself keeps it open; anywhere else closes
+    document.getElementById('card-lightbox').addEventListener('click', (event) => {
+      if (event.target.id !== 'lightbox-img') closeLightbox();
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeLightbox();
+    });
 
     function renderNextBatch() {
       const grid = document.getElementById('gallery-grid');
