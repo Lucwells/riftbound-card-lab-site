@@ -1377,7 +1377,7 @@
       document.getElementById('legend-overview-note').innerHTML =
         `${data.legend_count} legends across <strong>${data.total_decks}</strong> ${tierDisplayName(legendOverviewTier)} decks. `
         + `An even split would give each legend <strong>${(data.expected_play_rate * 100).toFixed(1)}%</strong> of decks, and an average deck places at <strong>50%</strong>. `
-        + `Placement is shrunk toward 50% for legends with few decks. Top 50% / Top 25% are that legend's own best-placing decks, showing how high it reaches in good hands. `
+        + `Placement is shrunk toward 50% for legends with few decks. Top 50% / Top 25% are that legend's own best-placing decks, taken per tournament and then pooled by field size, so one event can't supply the whole slice. `
         + `Sleeper score rewards placing above 50% while being played less than an even split; a legend needs ${LEGEND_MIN_DECKS}+ decks to get the badge.`;
 
       const rows = [...data.legends].sort((a, b) => {
