@@ -1369,10 +1369,10 @@
       }
     }
 
-    function sliceCell(slice) {
+    function sliceCell(slice, sliceableDecks) {
       return slice.avg === null
         ? `<span style="color:var(--text-muted);">—</span><span class="rec-sub">never 4+ decks at one event</span>`
-        : `${slice.avg.toFixed(1)}%<span class="rec-sub">n = ${slice.decks}</span>`;
+        : `${slice.avg.toFixed(1)}%<span class="rec-sub">n = ${slice.decks} of ${sliceableDecks}</span>`;
     }
 
     function renderLegendOverview() {
@@ -1383,7 +1383,7 @@
       document.getElementById('legend-overview-note').innerHTML =
         `${data.legend_count} legends across <strong>${data.total_decks}</strong> ${tierDisplayName(legendOverviewTier)} decks. `
         + `An even split would give each legend <strong>${(data.expected_play_rate * 100).toFixed(1)}%</strong> of decks, and an average deck places at <strong>50%</strong>. `
-        + `Placement is shrunk toward 50% for legends with few decks. Top 50% / Top 25% are that legend's own best-placing decks, taken per tournament and then pooled by field size, so one event can't supply the whole slice. Only events where the legend had 4+ decks count, so the slice really is a quarter or a half of its decks. `
+        + `Placement is shrunk toward 50% for legends with few decks. Top 50% / Top 25% are that legend's own best-placing decks, taken per tournament and then pooled by field size, so one event can't supply the whole slice. Only events where the legend had 4+ decks count, so the slice really is a quarter or a half of the decks it is measured against - that smaller pool is what the n values compare to. `
         + `Sleeper score rewards placing above 50% while being played less than an even split; a legend needs ${LEGEND_MIN_DECKS}+ decks to get the badge.`;
 
       const rows = [...data.legends].sort((a, b) => {
@@ -1401,11 +1401,11 @@
         const placementColor = ratioColor(Math.min(Math.max((l.adjusted_avg - 35) / 30, 0), 1));
         return `
           <tr>
-            <td><span class="card-name">${l.legend_name}</span>${sleeper ? '<span class="sleeper-badge">Sleeper</span>' : ''}<span class="card-type">${l.decks} decks</span></td>
+            <td><span class="card-name">${l.legend_name}</span>${sleeper ? '<span class="sleeper-badge">Sleeper</span>' : ''}<span class="card-type">${l.decks} decks${l.sliceable_decks < l.decks ? `, ${l.sliceable_decks} at 4+ deck events` : ''}</span></td>
             <td class="num"><span style="color:${playColor};">${(l.play_rate * 100).toFixed(1)}%</span><span class="rec-sub">${l.play_index.toFixed(1)}x an even split</span></td>
             <td class="num"><span style="color:${placementColor};">${l.adjusted_avg.toFixed(1)}%</span><span class="rec-sub">raw ${l.avg.toFixed(1)}%</span></td>
-            <td class="num">${sliceCell(l.top50)}</td>
-            <td class="num">${sliceCell(l.top25)}</td>
+            <td class="num">${sliceCell(l.top50, l.sliceable_decks)}</td>
+            <td class="num">${sliceCell(l.top25, l.sliceable_decks)}</td>
             <td class="num"><span class="${sleeper ? 'rec-edge' : ''}">${score > 0 ? '+' : ''}${score.toFixed(1)}</span></td>
           </tr>`;
       }).join('');
