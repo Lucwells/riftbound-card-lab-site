@@ -1394,10 +1394,11 @@
       }
     }
 
-    function sliceCell(slice, sliceableDecks) {
+    function sliceCell(legend, slice) {
       return slice.avg === null
-        ? `<span style="color:var(--text-muted);">—</span><span class="rec-sub">never 4+ decks at one event</span>`
-        : `${slice.avg.toFixed(1)}%<span class="rec-sub">n = ${slice.decks} of ${sliceableDecks}</span>`;
+        ? `<span style="color:var(--text-muted);">—</span><span class="rec-sub">no event had 4+ decks</span>`
+        : `${slice.avg.toFixed(1)}%<span class="rec-sub">n = ${slice.decks} of ${legend.sliceable_decks}, from `
+          + `<span style="color:${ratioColor(legend.sliceable_tournaments / legend.tournaments)};">${legend.sliceable_tournaments}/${legend.tournaments}</span> tournaments</span>`;
     }
 
     function renderLegendOverview() {
@@ -1426,11 +1427,11 @@
         const placementColor = ratioColor(Math.min(Math.max((l.adjusted_avg - 35) / 30, 0), 1));
         return `
           <tr>
-            <td><span class="card-name">${l.legend_name}</span>${sleeper ? '<span class="sleeper-badge">Sleeper</span>' : ''}${isMeta(l) ? '<span class="meta-badge">Meta</span>' : ''}<span class="card-type">${l.decks} decks${l.sliceable_decks < l.decks ? `, ${l.sliceable_decks} at 4+ deck events` : ''}</span></td>
+            <td><span class="card-name">${l.legend_name}</span>${sleeper ? '<span class="sleeper-badge">Sleeper</span>' : ''}${isMeta(l) ? '<span class="meta-badge">Meta</span>' : ''}<span class="card-type">${l.decks} decks across ${l.tournaments} tournaments</span></td>
             <td class="num"><span style="color:${playColor};">${(l.play_rate * 100).toFixed(1)}%</span><span class="rec-sub">${l.play_index.toFixed(1)}x an even split</span></td>
             <td class="num"><span style="color:${placementColor};">${l.adjusted_avg.toFixed(1)}%</span><span class="rec-sub">raw ${l.avg.toFixed(1)}%</span></td>
-            <td class="num">${sliceCell(l.top50, l.sliceable_decks)}</td>
-            <td class="num">${sliceCell(l.top25, l.sliceable_decks)}</td>
+            <td class="num">${sliceCell(l, l.top50)}</td>
+            <td class="num">${sliceCell(l, l.top25)}</td>
             <td class="num"><span class="${sleeper ? 'rec-edge' : ''}">${score > 0 ? '+' : ''}${score.toFixed(1)}</span></td>
           </tr>`;
       }).join('');
@@ -1892,14 +1893,16 @@
         const copies = bestCopyCount(rec.copies[best.zone]);
         const pickLabel = copies ? `${best.zone} · ${copies.quantity}x` : best.zone;
         const copiesSub = copies
-          ? `<span class="rec-sub">${copies.beats ? `${copies.quantity}x beats ${copies.beats}x` : `${copies.quantity}x most common`} · ${copies.avg.toFixed(1)}% avg, n = ${copies.decks}</span>`
+          ? `<span class="rec-sub">${copies.beats ? `${copies.quantity}x beats ${copies.beats}x` : `${copies.quantity}x most common`} · ${copies.avg.toFixed(1)}% avg, `
+            + `n = <span style="color:${ratioColor(copies.decks / best.stats.decks)};">${copies.decks}</span></span>`
           : '';
 
         let zoneNote = '';
         if (otherZone) {
           const other = rec.zones[otherZone];
           zoneNote = other.decks > 0
-            ? `<span class="rec-sub">${otherZone}: ${other.avg - rec.without.avg >= 0 ? '+' : ''}${(other.avg - rec.without.avg).toFixed(1)} edge, n = ${other.decks}</span>`
+            ? `<span class="rec-sub">${otherZone}: ${other.avg - rec.without.avg >= 0 ? '+' : ''}${(other.avg - rec.without.avg).toFixed(1)} edge, `
+              + `n = <span style="color:${ratioColor(other.decks / total)};">${other.decks}</span></span>`
             : `<span class="rec-sub">never run ${otherZone.toLowerCase()}</span>`;
         }
 
