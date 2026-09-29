@@ -19,8 +19,20 @@
   "Altar of Memories": ["Unit Exhaust", "Draw"],
   "Altar to Unity": ["Hold"],
   "Amateur Recital": ["Hold", "Movement"],
-  "Ambessa, Respected and Feared": ["Empower", "Assault", "Kill Enemy"],
+  "Ambessa, Respected and Feared": ["Empower", "Assault", "Attack Trigger"],
   "Ambessa, The Wolf": ["Empower", "Damage Resistant"],
   "Ancient Henge": ["Power Reduction"],
-  "Ancient Warmonger": ["Accelerate", "Anti Swarm"]
+  "Ancient Warmonger": ["Accelerate", "Anti Swarm"],
+  "Angle Shot": ["Equipment Movement"],
+  "Angler Beast": ["Anti Swarm"],
+  "Anivia, Primal": ["Attack Trigger"],
+  "Annie, Fiery": ["Damage Increase"],
+  "Annie, Stubborn": ["Trash"],
+  "Aphelios, Exalted": ["Equipment Trigger"],
+  "Applied Researchers": ["Empower", "Spell Discount"],
+  "Apprentice Mage": ["Empower", "Predict"],
+  "Apprentice Smith": ["Movement Draw"],
+  "Arachnoid Horror": ["Hunt", "Ambush"],
+  "Arcane Shift": ["Banish Replay"],
+  "Arena Bar": ["Unit Exhaust", "Buff"]
 }
