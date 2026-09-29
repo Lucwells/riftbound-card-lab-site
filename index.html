@@ -308,7 +308,7 @@
 
   /* Deck builder */
   .deck-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
-  .deck-bar select, .deck-bar input, .deck-pick-filters input, .deck-pick-filters select {
+  .deck-bar select, .deck-bar input, .deck-filters input, .deck-filters select {
     background: var(--surface); color: var(--text); border: 1px solid var(--border);
     border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 13px;
   }
@@ -319,11 +319,39 @@
   }
   .deck-btn:hover { border-color: var(--teal); }
   .deck-btn.danger:hover { border-color: var(--red); color: var(--red); }
-  .deck-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
-  @media (max-width: 800px) { .deck-cols { grid-template-columns: 1fr; } }
-  .deck-pick-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-  .deck-pick-filters input { flex: 1; min-width: 140px; }
-  .deck-pool { max-height: 640px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+  .deck-cols { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 20px; align-items: start; }
+  @media (max-width: 900px) { .deck-cols { grid-template-columns: 1fr; } }
+  .deck-summary { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+  @media (max-width: 900px) { .deck-summary { position: static; max-height: none; } }
+
+  .deck-steps { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .deck-step {
+    background: var(--surface); color: var(--text-muted); border: 1px solid var(--border);
+    border-radius: 999px; padding: 6px 14px; font: inherit; font-size: 13px; cursor: pointer;
+  }
+  .deck-step.active { color: var(--teal); border-color: var(--teal); }
+  .deck-step.done::after { content: " \2713"; color: var(--green); }
+  .deck-step:disabled { opacity: 0.4; cursor: not-allowed; }
+  .deck-prompt { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; margin: 0 0 4px; }
+  .deck-prompt-sub { color: var(--text-muted); font-size: 13px; margin: 0 0 12px; }
+  .deck-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .deck-filters input { flex: 1; min-width: 140px; }
+
+  .deck-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .deck-grid.landscape { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+  .deck-tile {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .deck-tile.selected { border-color: var(--teal); box-shadow: 0 0 0 1px var(--teal); }
+  .deck-tile.in-deck { border-color: var(--green); }
+  .deck-tile img { width: 100%; display: block; cursor: pointer; }
+  .deck-tile-info { padding: 8px 10px 4px; font-size: 12px; font-weight: 600; line-height: 1.3; }
+  .deck-tile-info .tag-chips { margin: 4px 0 0; }
+  .deck-tile-ctl { display: flex; align-items: center; gap: 6px; padding: 6px 10px 10px; margin-top: auto; }
+  .deck-tile-ctl .grow { flex: 1; }
+  .deck-more { margin: 14px 0; text-align: center; }
+
   .deck-row {
     display: flex; align-items: center; gap: 8px; padding: 6px 10px;
     border-bottom: 1px solid var(--border); font-size: 13px;
@@ -339,7 +367,7 @@
     border-radius: 6px; width: 26px; height: 26px; cursor: pointer; font: inherit;
   }
   .deck-mini:hover { border-color: var(--teal); color: var(--teal); }
-  .deck-mini.side { width: auto; padding: 0 6px; font-size: 11px; }
+  .deck-mini.wide { width: auto; padding: 0 8px; font-size: 11px; }
   .deck-zone { margin-bottom: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
   .deck-zone h3 {
     margin: 0; padding: 8px 10px; font-family: 'Barlow Condensed', sans-serif;
@@ -1103,22 +1131,13 @@
       <div class="legend-caption">Decks save in this browser only (localStorage). Use Export to back them up or move them to another device.</div>
       <div class="deck-cols">
         <div>
-          <div class="deck-pick-filters">
-            <input id="deck-pick-search" type="text" placeholder="Search cards to add..." autocomplete="off">
-            <select id="deck-pick-domain">
-              <option value="">All Domains</option>
-              <option>Fury</option><option>Calm</option><option>Mind</option>
-              <option>Body</option><option>Chaos</option><option>Order</option>
-            </select>
-            <select id="deck-pick-type">
-              <option value="">All Types</option>
-              <option>Legend</option><option>Unit</option><option>Spell</option>
-              <option>Gear</option><option>Battlefield</option><option>Rune</option>
-            </select>
-          </div>
-          <div id="deck-pool" class="deck-pool"></div>
+          <div id="deck-steps" class="deck-steps"></div>
+          <div id="deck-step-head"></div>
+          <div id="deck-filters" class="deck-filters"></div>
+          <div id="deck-grid" class="deck-grid"></div>
+          <div id="deck-more" class="deck-more"></div>
         </div>
-        <div>
+        <div class="deck-summary">
           <div id="deck-tagsum" class="deck-tagsum"></div>
           <div id="deck-zones"></div>
         </div>
@@ -1798,6 +1817,7 @@
     document.getElementById('gallery-type-filter').addEventListener('change', applyFilters);
 
     // --- Deck Builder tab ---
+    // Guided flow: Legend -> Chosen Champion -> Cards -> Battlefields -> Runes.
     // All storage goes through DeckStore so localStorage can later be
     // swapped for a backend (accounts) without touching the UI code.
     const DeckStore = {
@@ -1819,6 +1839,16 @@
       { id: 'rune',        label: 'Runes',        target: 12, types: ['Rune'],        maxCopies: 12 },
     ];
     const SIDEBOARD_TARGET = 8;
+    const RUNE_TOTAL = 12;
+    const DECK_PAGE_SIZE = 48;
+
+    const DECK_STEPS = [
+      { id: 'legend',       label: '1. Legend' },
+      { id: 'champion',     label: '2. Champion' },
+      { id: 'cards',        label: '3. Cards' },
+      { id: 'battlefields', label: '4. Battlefields' },
+      { id: 'runes',        label: '5. Runes' },
+    ];
 
     // Data has no champion flag; champion units are the "Name, Epithet" Units.
     const isChampionUnit = card => card.cardType.includes('Unit') && card.name.includes(', ');
@@ -1829,18 +1859,13 @@
       const prefix = card.name.split(', ')[0];
       return champion === prefix || champion.endsWith(' ' + prefix); // "Master Yi" vs "Yi, Honed"
     };
-    function deckLegendName(deck) {
-      return Object.keys(deck.main).find(n => CARD_BY_NAME.has(n) && zoneForCard(CARD_BY_NAME.get(n)).id === 'legend') || null;
-    }
-    // A champion unit is valid if the deck has no mapped legend yet, or it matches the legend
-    function canBeChosenChampion(card, deck) {
-      if (!isChampionUnit(card)) return false;
-      const champion = deck && LEGEND_CHAMPIONS[deckLegendName(deck)];
-      return !champion || championMatches(card, champion);
-    }
 
     let deckState = DeckStore.load();
     let CARD_BY_NAME = new Map();
+    let deckStep = 'legend';
+    let deckQuery = '';
+    let deckType = '';
+    let deckShown = DECK_PAGE_SIZE;
 
     const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
     const dkEsc = s => String(s).replace(/[&<>"']/g, c => HTML_ESCAPES[c]);
@@ -1852,6 +1877,21 @@
       return DECK_ZONES.find(z => z.types.includes(card.cardType[0])) || DECK_ZONES[1];
     }
 
+    function deckLegendName(deck) {
+      return Object.keys(deck.main).find(n => CARD_BY_NAME.has(n) && zoneForCard(CARD_BY_NAME.get(n)).id === 'legend') || null;
+    }
+    const deckLegendCard = deck => (deck && deckLegendName(deck) ? CARD_BY_NAME.get(deckLegendName(deck)) : null);
+
+    // A card fits a legend if every one of its domains is a legend domain (or Colorless)
+    const cardFitsDomains = (card, domains) => card.domain.every(d => d === 'Colorless' || domains.includes(d));
+
+    // A champion unit is valid if the deck has no mapped legend yet, or it matches the legend
+    function canBeChosenChampion(card, deck) {
+      if (!isChampionUnit(card)) return false;
+      const champion = deck && LEGEND_CHAMPIONS[deckLegendName(deck)];
+      return !champion || championMatches(card, champion);
+    }
+
     function createDeck(name, base) {
       const deck = { main: {}, side: {}, champion: null, ...(base || {}), id: newDeckId(), name, updated: Date.now() };
       deckState.decks.push(deck);
@@ -1860,45 +1900,102 @@
       return deck;
     }
 
-    function changeCount(name, bucket, delta) {
-      const deck = activeDeck();
-      const card = CARD_BY_NAME.get(name);
-      if (!deck || !card) return;
-      const zone = zoneForCard(card);
-      const cur = deck[bucket][name] || 0;
-      // Copy limit is shared across main + side
-      const other = (deck[bucket === 'main' ? 'side' : 'main'][name] || 0) + (deck.champion === name ? 1 : 0);
-      const next = Math.min(Math.max(0, cur + delta), zone.maxCopies - other);
-      if (next <= 0) delete deck[bucket][name]; else deck[bucket][name] = next;
-      // Only one Legend in the main deck: adding a new one replaces the old
-      if (zone.id === 'legend' && bucket === 'main' && next > 0) {
-        Object.keys(deck.main).forEach(n => {
-          const c = CARD_BY_NAME.get(n);
-          if (c && n !== name && zoneForCard(c).id === 'legend') delete deck.main[n];
-        });
-      }
+    function touchDeck(deck) {
       deck.updated = Date.now();
       deckSave();
+    }
+
+    // --- Step logic ---
+    function stepAllowed(step, deck) {
+      if (step === 'legend') return true;
+      if (!deck || !deckLegendName(deck)) return false;
+      return step === 'champion' || !!deck.champion;
+    }
+    function defaultStep(deck) {
+      if (!deck || !deckLegendName(deck)) return 'legend';
+      return deck.champion ? 'cards' : 'champion';
+    }
+    function goToStep(step) {
+      const deck = activeDeck();
+      deckStep = stepAllowed(step, deck) ? step : defaultStep(deck);
+      deckQuery = '';
+      deckType = '';
+      deckShown = DECK_PAGE_SIZE;
+      renderDeckSteps();
+      renderDeckStepBody();
+    }
+
+    // --- Deck edits ---
+    function chooseLegend(name) {
+      const deck = activeDeck();
+      const legend = CARD_BY_NAME.get(name);
+      if (!deck || !legend) return;
+      const oldName = deckLegendName(deck);
+      if (oldName === name) { goToStep(deck.champion ? 'cards' : 'champion'); return; }
+
+      // Cards that no longer fit the new legend's domains
+      const doms = legend.domain;
+      const misfits = bucket => Object.keys(deck[bucket]).filter(n => {
+        const c = CARD_BY_NAME.get(n);
+        if (!c) return true;
+        const z = zoneForCard(c).id;
+        if (z === 'legend' || z === 'battlefield') return false;
+        return !cardFitsDomains(c, doms);
+      });
+      const champion = LEGEND_CHAMPIONS[name];
+      const champBad = deck.champion && CARD_BY_NAME.has(deck.champion) && champion && !championMatches(CARD_BY_NAME.get(deck.champion), champion);
+      const removeMain = misfits('main');
+      const removeSide = misfits('side');
+      const count = removeMain.length + removeSide.length + (champBad ? 1 : 0);
+      if (oldName && count && !confirm(`Switching to ${name} removes ${count} card${count > 1 ? 's' : ''} that don't fit its domains or champion. Continue?`)) return;
+
+      if (oldName) delete deck.main[oldName];
+      removeMain.forEach(n => delete deck.main[n]);
+      removeSide.forEach(n => delete deck.side[n]);
+      if (champBad) deck.champion = null;
+      deck.main[name] = 1;
+      touchDeck(deck);
       renderDeckZones();
-      renderDeckPool();
+      goToStep(deck.champion ? 'cards' : 'champion');
     }
 
     function setChampion(name) {
       const deck = activeDeck();
       const card = CARD_BY_NAME.get(name);
       if (!deck || (name && (!card || !canBeChosenChampion(card, deck)))) return;
-      if (name) {
-        // Chosen champion uses one of the 3 copies allowed across the deck
-        const used = (deck.main[name] || 0) + (deck.side[name] || 0);
-        if (used >= 3) return;
-      }
+      // Chosen champion uses one of the 3 copies allowed across the deck
+      if (name && (deck.main[name] || 0) + (deck.side[name] || 0) >= 3) return;
       deck.champion = name || null;
-      deck.updated = Date.now();
-      deckSave();
+      touchDeck(deck);
       renderDeckZones();
-      renderDeckPool();
+      if (name) goToStep('cards'); else goToStep('champion');
     }
 
+    function changeCount(name, bucket, delta) {
+      const deck = activeDeck();
+      const card = CARD_BY_NAME.get(name);
+      if (!deck || !card) return;
+      const zone = zoneForCard(card);
+      const cur = deck[bucket][name] || 0;
+      // Copy limit is shared across main + side + the chosen champion copy
+      const other = (deck[bucket === 'main' ? 'side' : 'main'][name] || 0) + (deck.champion === name ? 1 : 0);
+      let cap = zone.maxCopies - other;
+      if (zone.id === 'rune') {
+        const runeTotal = Object.keys(deck.main).reduce((s, n) => {
+          const c = CARD_BY_NAME.get(n);
+          return s + (c && zoneForCard(c).id === 'rune' ? deck.main[n] : 0);
+        }, 0);
+        cap = Math.min(cap, cur + RUNE_TOTAL - runeTotal);
+      }
+      const next = Math.min(Math.max(0, cur + delta), Math.max(cap, 0));
+      if (next <= 0) delete deck[bucket][name]; else deck[bucket][name] = next;
+      touchDeck(deck);
+      renderDeckZones();
+      if (zone.id === 'legend') { goToStep(defaultStep(deck)); return; }
+      updateTileCounts();
+    }
+
+    // --- Rendering ---
     function renderDeckBar() {
       const sel = document.getElementById('deck-select');
       sel.innerHTML = deckState.decks.length
@@ -1908,6 +2005,14 @@
       const nameInput = document.getElementById('deck-name');
       nameInput.value = deck ? deck.name : '';
       nameInput.disabled = !deck;
+    }
+
+    function renderDeckSteps() {
+      const deck = activeDeck();
+      document.getElementById('deck-steps').innerHTML = DECK_STEPS.map(s => {
+        const done = (s.id === 'legend' && deck && deckLegendName(deck)) || (s.id === 'champion' && deck && deck.champion);
+        return `<button class="deck-step${s.id === deckStep ? ' active' : ''}${done ? ' done' : ''}" data-step="${s.id}"${stepAllowed(s.id, deck) ? '' : ' disabled'}>${s.label}</button>`;
+      }).join('');
     }
 
     function deckTagChips(name) {
@@ -1934,7 +2039,7 @@
       const tagBox = document.getElementById('deck-tagsum');
       const deck = activeDeck();
       if (!deck) {
-        box.innerHTML = '<p class="gallery-empty">Create a deck with “New” to start.</p>';
+        box.innerHTML = '';
         tagBox.innerHTML = '';
         return;
       }
@@ -1955,7 +2060,7 @@
                 </div>
                 <button class="deck-mini" data-act="unchamp" title="Remove chosen champion">−</button>
               </div>`
-            : '<div class="deck-empty">Pick a champion unit with the +CH button.</div>');
+            : '<div class="deck-empty">Not chosen yet.</div>');
         }
         const names = sorted(deck.main).filter(n => CARD_BY_NAME.has(n) && zoneForCard(CARD_BY_NAME.get(n)).id === zone.id);
         const total = names.reduce((s, n) => s + deck.main[n], 0);
@@ -1976,85 +2081,159 @@
         : '<div class="deck-empty" style="padding:0">No tagged cards in this deck yet.</div>');
     }
 
-    function renderDeckPool() {
-      const q = document.getElementById('deck-pick-search').value.trim().toLowerCase();
-      const dom = document.getElementById('deck-pick-domain').value;
-      const type = document.getElementById('deck-pick-type').value;
+    // Cards shown for the current step, before search / type filters
+    function stepPool(deck) {
+      const legend = deckLegendCard(deck);
+      const champion = legend && LEGEND_CHAMPIONS[legend.name];
+      if (deckStep === 'legend') return ALL_CARDS.filter(c => c.cardType.includes('Legend'));
+      if (deckStep === 'champion') return ALL_CARDS.filter(c => canBeChosenChampion(c, deck));
+      if (!legend) return [];
+      if (deckStep === 'battlefields') return ALL_CARDS.filter(c => c.cardType.includes('Battlefield'));
+      if (deckStep === 'runes') return ALL_CARDS.filter(c => c.cardType.includes('Rune') && cardFitsDomains(c, legend.domain));
+      // cards: units / spells / gear in the legend's domains; other champions' units are excluded
+      return ALL_CARDS.filter(c => zoneForCard(c).id === 'main'
+        && cardFitsDomains(c, legend.domain)
+        && (!isChampionUnit(c) || !champion || championMatches(c, champion)));
+    }
+
+    function stepHeadHtml(deck) {
+      const legend = deckLegendCard(deck);
+      const doms = legend ? legend.domain.join(' + ') : '';
+      const heads = {
+        legend: ['Choose your Legend', 'Pick the Legend that defines your deck. Its domains decide which cards you can play.'],
+        champion: ['Choose your Chosen Champion', legend ? `Champion units for ${legend.name}.` : ''],
+        cards: ['Add cards', `Showing ${doms} and Colorless cards. Use + / − for the main deck, +SB for the sideboard.`],
+        battlefields: ['Pick Battlefields', 'Choose 3 different Battlefields.'],
+        runes: ['Pick Runes', `Choose ${RUNE_TOTAL} runes from your Legend's domains (${doms}).`],
+      };
+      const [title, sub] = heads[deckStep];
+      return `<h2 class="deck-prompt">${title}</h2><p class="deck-prompt-sub">${dkEsc(sub)}</p>`;
+    }
+
+    function tileHtml(card, deck) {
+      const name = dkEsc(card.name);
+      const img = `<img src="${dkEsc(card.image)}" alt="${name}" loading="lazy" data-act="view">`;
+      const info = `<div class="deck-tile-info">${name}${deckTagChips(card.name)}</div>`;
+      if (deckStep === 'legend' || deckStep === 'champion') {
+        const selected = deckStep === 'legend' ? deckLegendName(deck) === card.name : deck.champion === card.name;
+        return `<div class="deck-tile${selected ? ' selected' : ''}" data-name="${name}">${img}${info}
+          <div class="deck-tile-ctl"><button class="deck-btn grow" data-act="${deckStep === 'legend' ? 'pick-legend' : 'pick-champ'}">${selected ? 'Selected' : 'Select'}</button></div></div>`;
+      }
+      const sideBtn = deckStep === 'cards' ? '<button class="deck-mini wide" data-act="side" title="Add to sideboard">+SB</button>' : '';
+      return `<div class="deck-tile" data-name="${name}">${img}${info}
+        <div class="deck-tile-ctl">
+          <button class="deck-mini" data-act="dec">−</button>
+          <span class="deck-qty" data-qty></span>
+          <button class="deck-mini" data-act="add">+</button>
+          <span class="grow"></span>${sideBtn}
+        </div></div>`;
+    }
+
+    function updateTileCounts() {
       const deck = activeDeck();
-      const list = ALL_CARDS.filter(c =>
-        (!q || c.name.toLowerCase().includes(q)) &&
-        (!dom || c.domain.includes(dom)) &&
-        (!type || c.cardType.includes(type)));
-      const shown = list.slice(0, 80);
-      document.getElementById('deck-pool').innerHTML = shown.map(c => {
-        const inMain = deck ? (deck.main[c.name] || 0) : 0;
-        const inSide = deck ? (deck.side[c.name] || 0) : 0;
-        const isChosen = deck && deck.champion === c.name;
-        const inDeck = inMain || inSide || isChosen
-          ? ` · in deck: ${inMain}${isChosen ? ' +champion' : ''}${inSide ? ` +${inSide} side` : ''}` : '';
-        return `<div class="deck-row" data-name="${dkEsc(c.name)}">
-          <div class="deck-row-name" data-act="view">${dkEsc(c.name)}
-            <div class="deck-row-meta">${dkEsc(c.cardType.join('/'))} · ${dkEsc(c.domain.join('/'))}${inDeck}</div>
-            ${deckTagChips(c.name)}
-          </div>
-          ${canBeChosenChampion(c, deck) ? '<button class="deck-mini side" data-act="champ" title="Set as Chosen Champion">+CH</button>' : ''}
-          <button class="deck-mini side" data-act="side" title="Add to sideboard">+SB</button>
-          <button class="deck-mini" data-act="add" title="Add to deck">+</button>
-        </div>`;
-      }).join('')
-        + (list.length > shown.length ? `<div class="deck-empty">Showing first ${shown.length} of ${list.length} — refine the search.</div>` : '')
-        + (!list.length ? '<div class="deck-empty">No cards match.</div>' : '');
+      if (!deck) return;
+      document.querySelectorAll('#deck-grid .deck-tile').forEach(tile => {
+        const name = tile.dataset.name;
+        const qtyEl = tile.querySelector('[data-qty]');
+        if (!qtyEl) return;
+        const main = deck.main[name] || 0;
+        const side = deck.side[name] || 0;
+        qtyEl.textContent = main + (side ? ` +${side}sb` : '');
+        tile.classList.toggle('in-deck', main + side > 0);
+      });
+    }
+
+    function renderDeckStepBody() {
+      const deck = activeDeck();
+      const head = document.getElementById('deck-step-head');
+      const filters = document.getElementById('deck-filters');
+      const grid = document.getElementById('deck-grid');
+      const more = document.getElementById('deck-more');
+      if (!deck) {
+        head.innerHTML = '<h2 class="deck-prompt">Start a deck</h2><p class="deck-prompt-sub">Click “New” to create your first deck.</p>';
+        filters.innerHTML = ''; grid.innerHTML = ''; more.innerHTML = '';
+        return;
+      }
+      head.innerHTML = stepHeadHtml(deck);
+
+      // Filters (rebuilt only when the step changes, so typing keeps focus)
+      if (filters.dataset.step !== deckStep) {
+        filters.dataset.step = deckStep;
+        filters.innerHTML = `<input id="deck-search" type="text" placeholder="Search by name..." autocomplete="off" value="${dkEsc(deckQuery)}">`
+          + (deckStep === 'cards'
+            ? `<select id="deck-type"><option value="">All Types</option><option>Unit</option><option>Spell</option><option>Gear</option></select>`
+            : '');
+      }
+      grid.classList.toggle('landscape', deckStep === 'battlefields');
+
+      const q = deckQuery.trim().toLowerCase();
+      const list = stepPool(deck)
+        .filter(c => (!q || c.name.toLowerCase().includes(q)) && (!deckType || c.cardType.includes(deckType)))
+        .sort((a, b) => a.name.localeCompare(b.name));
+      const shown = list.slice(0, deckShown);
+      grid.innerHTML = shown.length ? shown.map(c => tileHtml(c, deck)).join('') : '<p class="gallery-empty">No cards match.</p>';
+      more.innerHTML = list.length > shown.length
+        ? `<button class="deck-btn" id="deck-show-more">Show more (${list.length - shown.length} left)</button>` : '';
+      updateTileCounts();
     }
 
     function refreshDeckUi() {
+      const deck = activeDeck();
+      if (!stepAllowed(deckStep, deck)) deckStep = defaultStep(deck);
       renderDeckBar();
+      renderDeckSteps();
       renderDeckZones();
-      renderDeckPool();
+      const filters = document.getElementById('deck-filters');
+      filters.dataset.step = '';
+      renderDeckStepBody();
+    }
+
+    function selectDeck(id) {
+      deckState.activeId = id || null;
+      deckSave();
+      deckStep = defaultStep(activeDeck());
+      deckQuery = ''; deckType = ''; deckShown = DECK_PAGE_SIZE;
+      refreshDeckUi();
     }
 
     function initDeckBuilder() {
       CARD_BY_NAME = new Map(ALL_CARDS.map(c => [c.name, c]));
       fetch('legend_champions.json', { cache: 'no-cache' })
         .then(r => (r.ok ? r.json() : {}))
-        .then(m => { LEGEND_CHAMPIONS = m; renderDeckZones(); renderDeckPool(); })
+        .then(m => { LEGEND_CHAMPIONS = m; renderDeckZones(); renderDeckStepBody(); })
         .catch(() => { /* falls back to any champion unit */ });
       if (deckState.activeId && !activeDeck()) deckState.activeId = null;
       if (!deckState.activeId && deckState.decks.length) deckState.activeId = deckState.decks[0].id;
+      deckStep = defaultStep(activeDeck());
       refreshDeckUi();
     }
 
-    document.getElementById('deck-select').addEventListener('change', e => {
-      deckState.activeId = e.target.value || null;
-      deckSave();
-      refreshDeckUi();
-    });
+    // --- Events ---
+    document.getElementById('deck-select').addEventListener('change', e => selectDeck(e.target.value));
     document.getElementById('deck-name').addEventListener('input', e => {
       const deck = activeDeck();
       if (!deck) return;
       deck.name = e.target.value.trim() || 'Untitled deck';
-      deck.updated = Date.now();
-      deckSave();
+      touchDeck(deck);
       const opt = document.querySelector(`#deck-select option[value="${deck.id}"]`);
       if (opt) opt.textContent = deck.name;
     });
     document.getElementById('deck-new').addEventListener('click', () => {
-      createDeck(`New deck ${deckState.decks.length + 1}`);
-      refreshDeckUi();
+      const deck = createDeck(`New deck ${deckState.decks.length + 1}`);
+      selectDeck(deck.id);
       document.getElementById('deck-name').select();
     });
     document.getElementById('deck-dup').addEventListener('click', () => {
       const deck = activeDeck();
       if (!deck) return;
-      createDeck(`${deck.name} (copy)`, { main: { ...deck.main }, side: { ...deck.side }, champion: deck.champion });
-      refreshDeckUi();
+      const copy = createDeck(`${deck.name} (copy)`, { main: { ...deck.main }, side: { ...deck.side }, champion: deck.champion });
+      selectDeck(copy.id);
     });
     document.getElementById('deck-delete').addEventListener('click', () => {
       const deck = activeDeck();
       if (!deck || !confirm(`Delete "${deck.name}"? This cannot be undone.`)) return;
       deckState.decks = deckState.decks.filter(d => d.id !== deck.id);
-      deckState.activeId = deckState.decks.length ? deckState.decks[0].id : null;
-      deckSave();
-      refreshDeckUi();
+      selectDeck(deckState.decks.length ? deckState.decks[0].id : null);
     });
     document.getElementById('deck-export').addEventListener('click', () => {
       const payload = { app: 'riftbound-card-lab', version: 1, decks: deckState.decks };
@@ -2073,8 +2252,9 @@
       try {
         const data = JSON.parse(await file.text());
         if (!Array.isArray(data.decks)) throw new Error('no decks array');
-        data.decks.forEach(d => createDeck(String(d.name || 'Imported deck'), { main: d.main || {}, side: d.side || {}, champion: d.champion || null }));
-        refreshDeckUi();
+        let last = null;
+        data.decks.forEach(d => { last = createDeck(String(d.name || 'Imported deck'), { main: d.main || {}, side: d.side || {}, champion: d.champion || null }); });
+        if (last) selectDeck(last.id);
       } catch (err) {
         alert(`Couldn't import that file (${err.message}).`);
       }
@@ -2090,24 +2270,46 @@
       document.getElementById('card-lightbox').hidden = false;
     }
 
-    function deckRowClick(e) {
+    // Shared click handler for the card grid and the deck summary
+    function deckClick(e) {
       const btn = e.target.closest('[data-act]');
-      const row = e.target.closest('.deck-row');
-      if (!btn || !row) return;
-      const name = row.dataset.name;
-      const act = btn.dataset.act;
-      if (act === 'view') openCardView(name);
-      else if (act === 'add') changeCount(name, 'main', 1);
-      else if (act === 'champ') setChampion(name);
-      else if (act === 'unchamp') setChampion(null);
-      else if (act === 'side') changeCount(name, 'side', 1);
-      else if (act === 'inc') changeCount(name, row.dataset.bucket, 1);
-      else if (act === 'dec') changeCount(name, row.dataset.bucket, -1);
+      const host = e.target.closest('[data-name]');
+      if (!btn || !host) return;
+      const name = host.dataset.name;
+      const bucket = host.dataset.bucket || 'main';
+      switch (btn.dataset.act) {
+        case 'view': openCardView(name); break;
+        case 'pick-legend': chooseLegend(name); break;
+        case 'pick-champ': setChampion(name); break;
+        case 'unchamp': setChampion(null); break;
+        case 'add': changeCount(name, 'main', 1); break;
+        case 'side': changeCount(name, 'side', 1); break;
+        case 'inc': changeCount(name, bucket, 1); break;
+        case 'dec': changeCount(name, bucket, -1); break;
+      }
     }
-    document.getElementById('deck-pool').addEventListener('click', deckRowClick);
-    document.getElementById('deck-zones').addEventListener('click', deckRowClick);
-    ['deck-pick-search', 'deck-pick-domain', 'deck-pick-type'].forEach(id => {
-      document.getElementById(id).addEventListener(id === 'deck-pick-search' ? 'input' : 'change', renderDeckPool);
+    document.getElementById('deck-grid').addEventListener('click', deckClick);
+    document.getElementById('deck-zones').addEventListener('click', deckClick);
+    document.getElementById('deck-steps').addEventListener('click', e => {
+      const btn = e.target.closest('[data-step]');
+      if (btn && !btn.disabled) goToStep(btn.dataset.step);
+    });
+    document.getElementById('deck-filters').addEventListener('input', e => {
+      if (e.target.id !== 'deck-search') return;
+      deckQuery = e.target.value;
+      deckShown = DECK_PAGE_SIZE;
+      renderDeckStepBody();
+    });
+    document.getElementById('deck-filters').addEventListener('change', e => {
+      if (e.target.id !== 'deck-type') return;
+      deckType = e.target.value;
+      deckShown = DECK_PAGE_SIZE;
+      renderDeckStepBody();
+    });
+    document.getElementById('deck-more').addEventListener('click', e => {
+      if (e.target.id !== 'deck-show-more') return;
+      deckShown += DECK_PAGE_SIZE;
+      renderDeckStepBody();
     });
 
     loadGalleryData().then(initDeckBuilder);
