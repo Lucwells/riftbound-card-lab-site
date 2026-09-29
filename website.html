@@ -2207,8 +2207,10 @@
       const shown = list.slice(0, deckShown);
       grid.innerHTML = shown.length ? shown.map(c => tileHtml(c, deck)).join('') : '<p class="gallery-empty">No cards match.</p>';
       more.innerHTML = list.length > shown.length
-        ? `<button class="deck-btn" id="deck-show-more">Show more (${list.length - shown.length} left)</button>` : '';
+        ? `<button class="deck-btn" id="deck-show-more">Loading more (${list.length - shown.length} left)…</button>` : '';
       updateTileCounts();
+      // If the end of the grid is still on screen after rendering, keep loading
+      requestAnimationFrame(loadMoreIfNearBottom);
     }
 
     function refreshDeckUi() {
@@ -2360,6 +2362,19 @@
       deckShown = DECK_PAGE_SIZE;
       renderDeckStepBody();
     });
+    // Infinite scroll: load the next batch when the bottom of the grid nears the screen
+    function loadMoreIfNearBottom() {
+      const panel = document.getElementById('tab-decks');
+      const more = document.getElementById('deck-more');
+      if (panel.hidden || !more.firstElementChild) return;
+      if (more.getBoundingClientRect().top < window.innerHeight + 600) {
+        deckShown += DECK_PAGE_SIZE;
+        renderDeckStepBody();
+      }
+    }
+    window.addEventListener('scroll', loadMoreIfNearBottom, { passive: true });
+    window.addEventListener('resize', loadMoreIfNearBottom);
+    // Button stays as a manual fallback
     document.getElementById('deck-more').addEventListener('click', e => {
       if (e.target.id !== 'deck-show-more') return;
       deckShown += DECK_PAGE_SIZE;
