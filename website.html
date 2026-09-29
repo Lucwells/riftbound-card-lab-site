@@ -359,6 +359,10 @@
   .deck-tile-ctl .grow { flex: 1; }
   .deck-more { margin: 14px 0; text-align: center; }
 
+  .deck-hover-preview { position: fixed; z-index: 60; pointer-events: none; filter: drop-shadow(0 8px 24px rgba(0,0,0,0.7)); }
+  .deck-hover-preview[hidden] { display: none; }
+  .deck-hover-preview img { display: block; width: 340px; max-height: 92vh; border-radius: 12px; }
+  .deck-hover-preview.landscape img { width: 480px; }
   .deck-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 20px; }
   .deck-modal[hidden] { display: none; }
   .deck-modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; width: min(560px, 100%); max-height: 90vh; display: flex; flex-direction: column; gap: 10px; }
@@ -1152,6 +1156,7 @@
         <button class="deck-btn danger" id="deck-delete">Delete</button>
       </div>
       <div class="legend-caption">Decks save in this browser only (localStorage). Export gives you a text list to copy; paste one into Import to bring a deck back or move it to another device.</div>
+      <div id="deck-hover-preview" class="deck-hover-preview" hidden><img alt=""></div>
       <div id="deck-text-modal" class="deck-modal" hidden>
         <div class="deck-modal-box">
           <h3 id="deck-text-title"></h3>
@@ -2153,7 +2158,7 @@
       const heads = {
         legend: ['Choose your Legend', 'Click a Legend to pick it. Its domains decide which cards you can play.'],
         champion: ['Choose your Chosen Champion', legend ? `Click a champion unit for ${legend.name}.` : ''],
-        cards: ['Add cards', `Showing ${doms} and Colorless cards. Left click a card to add it, right click to remove it (or use + / −). +SB adds to the sideboard; shift+click enlarges.`],
+        cards: ['Add cards', `Showing ${doms} and Colorless cards. Left click a card to add it, right click to remove it (or use + / −). +SB adds to the sideboard. Hold Shift over a card to enlarge it.`],
         battlefields: ['Pick Battlefields', 'Choose 3 different Battlefields.'],
         runes: ['Pick Runes', `Choose ${RUNE_TOTAL} runes from your Legend's domains (${doms}).`],
       };
@@ -2290,6 +2295,48 @@
       deckState.decks = deckState.decks.filter(d => d.id !== deck.id);
       selectDeck(deckState.decks.length ? deckState.decks[0].id : null);
     });
+    // --- Hold Shift over a card picture to enlarge it ---
+    const hoverPreview = document.getElementById('deck-hover-preview');
+    let hoverName = null;
+    let hoverX = 0, hoverY = 0;
+
+    function placeHoverPreview() {
+      const box = hoverPreview.getBoundingClientRect();
+      // Prefer the right of the cursor, flip left / clamp to stay on screen
+      let x = hoverX + 24;
+      if (x + box.width > window.innerWidth - 8) x = hoverX - 24 - box.width;
+      x = Math.max(8, x);
+      const y = Math.min(Math.max(8, hoverY - box.height / 2), window.innerHeight - box.height - 8);
+      hoverPreview.style.left = x + 'px';
+      hoverPreview.style.top = Math.max(8, y) + 'px';
+    }
+    function showHoverPreview() {
+      const card = hoverName && CARD_BY_NAME.get(hoverName);
+      if (!card) { hoverPreview.hidden = true; return; }
+      const img = hoverPreview.querySelector('img');
+      if (img.getAttribute('src') !== card.image) img.src = card.image;
+      hoverPreview.classList.toggle('landscape', card.cardType.includes('Battlefield'));
+      hoverPreview.hidden = false;
+      placeHoverPreview();
+    }
+    const hideHoverPreview = () => { hoverPreview.hidden = true; };
+
+    ['deck-grid', 'deck-zones'].forEach(id => {
+      const el = document.getElementById(id);
+      el.addEventListener('mousemove', e => {
+        const img = e.target.closest('img');
+        const host = img && img.closest('[data-name]');
+        hoverName = host ? host.dataset.name : null;
+        hoverX = e.clientX; hoverY = e.clientY;
+        if (e.shiftKey && hoverName) showHoverPreview(); else hideHoverPreview();
+      });
+      el.addEventListener('mouseleave', () => { hoverName = null; hideHoverPreview(); });
+    });
+    document.addEventListener('keydown', e => { if (e.key === 'Shift' && hoverName) showHoverPreview(); });
+    document.addEventListener('keyup', e => { if (e.key === 'Shift') hideHoverPreview(); });
+    window.addEventListener('blur', hideHoverPreview);
+    window.addEventListener('scroll', hideHoverPreview, { passive: true });
+
     // --- Text export / import ---
     // Format: "Legend:" / "Champion:" / "MainDeck:" / "Battlefields:" / "Runes:" / "Sideboard:"
     // sections, one "count Card Name" per line.
@@ -2425,10 +2472,7 @@
       if (!btn || !host) return;
       const name = host.dataset.name;
       const bucket = host.dataset.bucket || 'main';
-      let act = btn.dataset.act;
-      // Shift+click on a card picture opens the big view instead of adding
-      if (e.shiftKey && btn.tagName === 'IMG') act = 'view';
-      switch (act) {
+      switch (btn.dataset.act) {
         case 'swap': swapCopy(name, bucket); break;
         case 'view': openCardView(name); break;
         case 'pick-legend': chooseLegend(name); break;
