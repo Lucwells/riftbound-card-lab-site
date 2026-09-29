@@ -352,15 +352,18 @@
   .deck-tile-ctl .grow { flex: 1; }
   .deck-more { margin: 14px 0; text-align: center; }
 
-  .deck-row {
-    display: flex; align-items: center; gap: 8px; padding: 6px 10px;
-    border-bottom: 1px solid var(--border); font-size: 13px;
+  .deck-tile[data-act] { cursor: pointer; }
+  .deck-tile[data-act]:hover { border-color: var(--teal); }
+  .deck-thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; padding: 8px; }
+  .deck-thumbs.landscape { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+  .deck-thumb { position: relative; display: flex; flex-direction: column; gap: 4px; }
+  .deck-thumb img { width: 100%; display: block; border-radius: 6px; cursor: pointer; }
+  .deck-thumb-badge {
+    position: absolute; top: 4px; right: 4px; background: rgba(13,17,23,0.85); color: var(--teal);
+    border: 1px solid var(--teal); border-radius: 999px; font-size: 11px; font-weight: 700; padding: 1px 7px;
   }
-  .deck-row:last-child { border-bottom: none; }
-  .deck-row-name { flex: 1; cursor: pointer; min-width: 0; }
-  .deck-row-name:hover { color: var(--teal); }
-  .deck-row .tag-chips { margin: 3px 0 0; }
-  .deck-row-meta { color: var(--text-muted); font-size: 11px; }
+  .deck-thumb-ctl { display: flex; justify-content: center; gap: 4px; }
+  .deck-thumb-ctl .deck-mini { width: 24px; height: 22px; line-height: 1; padding: 0; }
   .deck-qty { min-width: 18px; text-align: center; font-weight: 600; }
   .deck-mini {
     background: var(--surface-2); color: var(--text); border: 1px solid var(--border);
@@ -369,6 +372,10 @@
   .deck-mini:hover { border-color: var(--teal); color: var(--teal); }
   .deck-mini.wide { width: auto; padding: 0 8px; font-size: 11px; }
   .deck-zone { margin-bottom: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+  .deck-zone.active { border-color: var(--teal); }
+  .deck-zone h3 { cursor: pointer; }
+  .deck-zone h3:hover .zone-name { color: var(--teal); }
+  .deck-zone h3 .zone-edit { font-family: 'Inter', sans-serif; font-size: 11px; color: var(--text-muted); font-weight: 400; margin-left: 8px; }
   .deck-zone h3 {
     margin: 0; padding: 8px 10px; font-family: 'Barlow Condensed', sans-serif;
     font-size: 16px; display: flex; justify-content: space-between; border-bottom: 1px solid var(--border);
@@ -1922,6 +1929,7 @@
       deckType = '';
       deckShown = DECK_PAGE_SIZE;
       renderDeckSteps();
+      renderDeckZones();
       renderDeckStepBody();
     }
 
@@ -1991,7 +1999,6 @@
       if (next <= 0) delete deck[bucket][name]; else deck[bucket][name] = next;
       touchDeck(deck);
       renderDeckZones();
-      if (zone.id === 'legend') { goToStep(defaultStep(deck)); return; }
       updateTileCounts();
     }
 
@@ -2020,19 +2027,19 @@
       return tags.length ? `<div class="tag-chips">${tags.map(t => `<span class="tag-chip">${dkEsc(t)}</span>`).join('')}</div>` : '';
     }
 
-    function deckCardRow(name, count, bucket) {
+    // Small picture with a count badge. controls: +/- buttons (main/side only)
+    function deckThumb(name, count, bucket, controls) {
       const card = CARD_BY_NAME.get(name);
-      const meta = card ? `${card.cardType.join('/')} · ${card.domain.join('/')}` : 'unknown card';
-      return `<div class="deck-row" data-name="${dkEsc(name)}" data-bucket="${bucket}">
-        <div class="deck-row-name" data-act="view">${dkEsc(name)}
-          <div class="deck-row-meta">${dkEsc(meta)}</div>
-          ${deckTagChips(name)}
-        </div>
-        <button class="deck-mini" data-act="dec">−</button>
-        <span class="deck-qty">${count}</span>
-        <button class="deck-mini" data-act="inc">+</button>
+      if (!card) return '';
+      return `<div class="deck-thumb" data-name="${dkEsc(name)}" data-bucket="${bucket}">
+        <img src="${dkEsc(card.image)}" alt="${dkEsc(name)}" loading="lazy" title="${dkEsc(name)}" data-act="view">
+        ${count > 1 || controls ? `<span class="deck-thumb-badge">×${count}</span>` : ''}
+        ${controls ? '<div class="deck-thumb-ctl"><button class="deck-mini" data-act="dec">−</button><button class="deck-mini" data-act="inc">+</button></div>' : ''}
       </div>`;
     }
+
+    // Clicking a zone header opens the step where that zone's cards are chosen
+    const ZONE_STEP = { legend: 'legend', champion: 'champion', main: 'cards', battlefield: 'battlefields', rune: 'runes', side: 'cards' };
 
     function renderDeckZones() {
       const box = document.getElementById('deck-zones');
@@ -2044,31 +2051,27 @@
         return;
       }
       const sorted = obj => Object.keys(obj).sort((a, b) => a.localeCompare(b));
-      const zoneHtml = (label, target, total, rows) => `<div class="deck-zone"><h3><span>${label}</span>
+      const zoneHtml = (id, label, target, total, thumbs, landscape) => `<div class="deck-zone${ZONE_STEP[id] === deckStep ? ' active' : ''}">
+        <h3 data-goto="${ZONE_STEP[id]}" title="Click to change"><span><span class="zone-name">${label}</span><span class="zone-edit">change</span></span>
         <span class="count ${total === target ? 'ok' : 'bad'}">${total} / ${target}</span></h3>
-        ${rows || '<div class="deck-empty">Empty</div>'}</div>`;
+        ${thumbs ? `<div class="deck-thumbs${landscape ? ' landscape' : ''}">${thumbs}</div>` : '<div class="deck-empty">Empty — click to choose</div>'}</div>`;
       let html = '';
       DECK_ZONES.forEach(zone => {
         if (zone.id === 'main') {
           const champ = deck.champion && CARD_BY_NAME.has(deck.champion) ? deck.champion : null;
-          html += zoneHtml('Chosen Champion', 1, champ ? 1 : 0, champ
-            ? `<div class="deck-row" data-name="${dkEsc(champ)}">
-                <div class="deck-row-name" data-act="view">${dkEsc(champ)}
-                  <div class="deck-row-meta">${dkEsc(CARD_BY_NAME.get(champ).domain.join('/'))}${
-                    canBeChosenChampion(CARD_BY_NAME.get(champ), deck) ? '' : ' · <span style="color:var(--gold)">doesn\'t match this Legend</span>'}</div>
-                  ${deckTagChips(champ)}
-                </div>
-                <button class="deck-mini" data-act="unchamp" title="Remove chosen champion">−</button>
-              </div>`
-            : '<div class="deck-empty">Not chosen yet.</div>');
+          const mismatch = champ && !canBeChosenChampion(CARD_BY_NAME.get(champ), deck);
+          html += zoneHtml('champion', 'Chosen Champion', 1, champ ? 1 : 0, champ ? deckThumb(champ, 1, 'main', false) : '', false);
+          if (mismatch) html = html.replace(/<\/div>\s*$/, '<div class="deck-empty" style="color:var(--gold)">Doesn\'t match this Legend</div></div>');
         }
         const names = sorted(deck.main).filter(n => CARD_BY_NAME.has(n) && zoneForCard(CARD_BY_NAME.get(n)).id === zone.id);
         const total = names.reduce((s, n) => s + deck.main[n], 0);
-        html += zoneHtml(zone.label, zone.target, total, names.map(n => deckCardRow(n, deck.main[n], 'main')).join(''));
+        // Legend is a single pick: no +/- controls
+        const controls = zone.id !== 'legend';
+        html += zoneHtml(zone.id, zone.label, zone.target, total, names.map(n => deckThumb(n, deck.main[n], 'main', controls)).join(''), zone.id === 'battlefield');
       });
       const sideNames = sorted(deck.side);
       const sideTotal = sideNames.reduce((s, n) => s + deck.side[n], 0);
-      html += zoneHtml('Sideboard', SIDEBOARD_TARGET, sideTotal, sideNames.map(n => deckCardRow(n, deck.side[n], 'side')).join(''));
+      html += zoneHtml('side', 'Sideboard', SIDEBOARD_TARGET, sideTotal, sideNames.map(n => deckThumb(n, deck.side[n], 'side', true)).join(''), false);
       box.innerHTML = html;
 
       // Tag totals across the main deck (copies counted)
@@ -2100,8 +2103,8 @@
       const legend = deckLegendCard(deck);
       const doms = legend ? legend.domain.join(' + ') : '';
       const heads = {
-        legend: ['Choose your Legend', 'Pick the Legend that defines your deck. Its domains decide which cards you can play.'],
-        champion: ['Choose your Chosen Champion', legend ? `Champion units for ${legend.name}.` : ''],
+        legend: ['Choose your Legend', 'Click a Legend to pick it. Its domains decide which cards you can play.'],
+        champion: ['Choose your Chosen Champion', legend ? `Click a champion unit for ${legend.name}.` : ''],
         cards: ['Add cards', `Showing ${doms} and Colorless cards. Use + / − for the main deck, +SB for the sideboard.`],
         battlefields: ['Pick Battlefields', 'Choose 3 different Battlefields.'],
         runes: ['Pick Runes', `Choose ${RUNE_TOTAL} runes from your Legend's domains (${doms}).`],
@@ -2112,13 +2115,13 @@
 
     function tileHtml(card, deck) {
       const name = dkEsc(card.name);
-      const img = `<img src="${dkEsc(card.image)}" alt="${name}" loading="lazy" data-act="view">`;
       const info = `<div class="deck-tile-info">${name}${deckTagChips(card.name)}</div>`;
       if (deckStep === 'legend' || deckStep === 'champion') {
         const selected = deckStep === 'legend' ? deckLegendName(deck) === card.name : deck.champion === card.name;
-        return `<div class="deck-tile${selected ? ' selected' : ''}" data-name="${name}">${img}${info}
-          <div class="deck-tile-ctl"><button class="deck-btn grow" data-act="${deckStep === 'legend' ? 'pick-legend' : 'pick-champ'}">${selected ? 'Selected' : 'Select'}</button></div></div>`;
+        return `<div class="deck-tile${selected ? ' selected' : ''}" data-name="${name}" data-act="${deckStep === 'legend' ? 'pick-legend' : 'pick-champ'}">
+          <img src="${dkEsc(card.image)}" alt="${name}" loading="lazy">${info}</div>`;
       }
+      const img = `<img src="${dkEsc(card.image)}" alt="${name}" loading="lazy" data-act="view">`;
       const sideBtn = deckStep === 'cards' ? '<button class="deck-mini wide" data-act="side" title="Add to sideboard">+SB</button>' : '';
       return `<div class="deck-tile" data-name="${name}">${img}${info}
         <div class="deck-tile-ctl">
@@ -2272,6 +2275,8 @@
 
     // Shared click handler for the card grid and the deck summary
     function deckClick(e) {
+      const goto = e.target.closest('[data-goto]');
+      if (goto) { goToStep(goto.dataset.goto); return; }
       const btn = e.target.closest('[data-act]');
       const host = e.target.closest('[data-name]');
       if (!btn || !host) return;
@@ -2281,7 +2286,6 @@
         case 'view': openCardView(name); break;
         case 'pick-legend': chooseLegend(name); break;
         case 'pick-champ': setChampion(name); break;
-        case 'unchamp': setChampion(null); break;
         case 'add': changeCount(name, 'main', 1); break;
         case 'side': changeCount(name, 'side', 1); break;
         case 'inc': changeCount(name, bucket, 1); break;
