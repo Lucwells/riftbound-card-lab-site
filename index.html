@@ -359,6 +359,15 @@
   .deck-tile-ctl .grow { flex: 1; }
   .deck-more { margin: 14px 0; text-align: center; }
 
+  .deck-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .deck-modal[hidden] { display: none; }
+  .deck-modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; width: min(560px, 100%); max-height: 90vh; display: flex; flex-direction: column; gap: 10px; }
+  .deck-modal-box h3 { margin: 0; font-family: 'Barlow Condensed', sans-serif; font-size: 20px; }
+  .deck-modal-box textarea {
+    width: 100%; height: 420px; max-height: 60vh; resize: vertical; background: var(--bg); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px; padding: 10px; font: 13px/1.5 ui-monospace, Consolas, monospace;
+  }
+  .deck-modal-btns { display: flex; gap: 8px; justify-content: flex-end; }
   .deck-tile[data-act] { cursor: pointer; }
   .deck-tile[data-act]:hover { border-color: var(--teal); }
   .deck-thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; padding: 10px; }
@@ -1141,9 +1150,19 @@
         <button class="deck-btn" id="deck-export">Export</button>
         <button class="deck-btn" id="deck-import">Import</button>
         <button class="deck-btn danger" id="deck-delete">Delete</button>
-        <input id="deck-import-file" type="file" accept=".json,application/json" hidden>
       </div>
-      <div class="legend-caption">Decks save in this browser only (localStorage). Use Export to back them up or move them to another device.</div>
+      <div class="legend-caption">Decks save in this browser only (localStorage). Export gives you a text list to copy; paste one into Import to bring a deck back or move it to another device.</div>
+      <div id="deck-text-modal" class="deck-modal" hidden>
+        <div class="deck-modal-box">
+          <h3 id="deck-text-title"></h3>
+          <textarea id="deck-text-area" spellcheck="false"></textarea>
+          <div id="deck-text-msg" class="deck-prompt-sub"></div>
+          <div class="deck-modal-btns">
+            <button class="deck-btn" id="deck-text-action"></button>
+            <button class="deck-btn" id="deck-text-close">Close</button>
+          </div>
+        </div>
+      </div>
       <div class="deck-cols">
         <div>
           <div id="deck-steps" class="deck-steps"></div>
@@ -2271,29 +2290,120 @@
       deckState.decks = deckState.decks.filter(d => d.id !== deck.id);
       selectDeck(deckState.decks.length ? deckState.decks[0].id : null);
     });
-    document.getElementById('deck-export').addEventListener('click', () => {
-      const payload = { app: 'riftbound-card-lab', version: 1, decks: deckState.decks };
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'riftbound-decks.json';
-      a.click();
-      URL.revokeObjectURL(a.href);
-    });
-    document.getElementById('deck-import').addEventListener('click', () => document.getElementById('deck-import-file').click());
-    document.getElementById('deck-import-file').addEventListener('change', async e => {
-      const file = e.target.files[0];
-      e.target.value = '';
-      if (!file) return;
-      try {
-        const data = JSON.parse(await file.text());
-        if (!Array.isArray(data.decks)) throw new Error('no decks array');
-        let last = null;
-        data.decks.forEach(d => { last = createDeck(String(d.name || 'Imported deck'), { main: d.main || {}, side: d.side || {}, champion: d.champion || null }); });
-        if (last) selectDeck(last.id);
-      } catch (err) {
-        alert(`Couldn't import that file (${err.message}).`);
+    // --- Text export / import ---
+    // Format: "Legend:" / "Champion:" / "MainDeck:" / "Battlefields:" / "Runes:" / "Sideboard:"
+    // sections, one "count Card Name" per line.
+    const fullLegendName = card => {
+      const champion = LEGEND_CHAMPIONS[card.name];
+      const epithet = card.name.replace(' - Starter', '');
+      return champion ? `${champion}, ${epithet}` : card.name;
+    };
+
+    function deckToText(deck) {
+      const byName = (a, b) => a.localeCompare(b);
+      const lines = [];
+      const section = (title, rows) => {
+        if (!rows.length) return;
+        if (lines.length) lines.push('');
+        lines.push(`${title}:`, ...rows);
+      };
+      const zoneRows = zoneId => Object.keys(deck.main).sort(byName)
+        .filter(n => CARD_BY_NAME.has(n) && zoneForCard(CARD_BY_NAME.get(n)).id === zoneId)
+        .map(n => `${deck.main[n]} ${n}`);
+      const legendName = deckLegendName(deck);
+      section('Legend', legendName ? [`1 ${fullLegendName(CARD_BY_NAME.get(legendName))}`] : []);
+      section('Champion', deck.champion ? [`1 ${deck.champion}`] : []);
+      section('MainDeck', zoneRows('main'));
+      section('Battlefields', zoneRows('battlefield'));
+      section('Runes', zoneRows('rune'));
+      section('Sideboard', Object.keys(deck.side).sort(byName).map(n => `${deck.side[n]} ${n}`));
+      return lines.join('\n');
+    }
+
+    // Returns { deck, unknown[] } from pasted text
+    function textToDeck(text) {
+      const deck = { main: {}, side: {}, champion: null };
+      const unknown = [];
+      const legendByFullName = new Map(ALL_CARDS.filter(c => c.cardType.includes('Legend')).map(c => [fullLegendName(c).toLowerCase(), c.name]));
+      const byLower = new Map(ALL_CARDS.map(c => [c.name.toLowerCase(), c.name]));
+      let section = '';
+      text.split(/\r?\n/).forEach(raw => {
+        const line = raw.trim();
+        if (!line) return;
+        const head = line.match(/^([A-Za-z ]+):$/);
+        if (head) { section = head[1].replace(/\s+/g, '').toLowerCase(); return; }
+        const m = line.match(/^(\d+)\s*x?\s+(.+)$/i);
+        if (!m) { unknown.push(line); return; }
+        const count = parseInt(m[1], 10);
+        const wanted = m[2].trim().toLowerCase();
+        if (section === 'legend') {
+          const name = legendByFullName.get(wanted) || byLower.get(wanted);
+          if (name) deck.main[name] = 1; else unknown.push(m[2]);
+          return;
+        }
+        const name = byLower.get(wanted);
+        if (!name) { unknown.push(m[2]); return; }
+        if (section === 'champion') deck.champion = name;
+        else if (section === 'sideboard') deck.side[name] = (deck.side[name] || 0) + count;
+        else deck.main[name] = (deck.main[name] || 0) + count;
+      });
+      return { deck, unknown };
+    }
+
+    let deckTextMode = '';
+    function openDeckText(mode) {
+      const modal = document.getElementById('deck-text-modal');
+      const area = document.getElementById('deck-text-area');
+      const action = document.getElementById('deck-text-action');
+      const msg = document.getElementById('deck-text-msg');
+      deckTextMode = mode;
+      msg.textContent = '';
+      if (mode === 'export') {
+        const deck = activeDeck();
+        if (!deck) return;
+        document.getElementById('deck-text-title').textContent = `Export: ${deck.name}`;
+        area.value = deckToText(deck);
+        area.readOnly = true;
+        action.textContent = 'Copy to clipboard';
+      } else {
+        document.getElementById('deck-text-title').textContent = 'Import deck from text';
+        area.value = '';
+        area.readOnly = false;
+        area.placeholder = 'Legend:\n1 Irelia, Blade Dancer\n\nChampion:\n1 Irelia, Fervent\n\nMainDeck:\n3 Defy\n...';
+        action.textContent = 'Import deck';
       }
+      modal.hidden = false;
+      area.focus();
+      if (mode === 'export') area.select();
+    }
+    const closeDeckText = () => { document.getElementById('deck-text-modal').hidden = true; };
+
+    document.getElementById('deck-export').addEventListener('click', () => openDeckText('export'));
+    document.getElementById('deck-import').addEventListener('click', () => openDeckText('import'));
+    document.getElementById('deck-text-close').addEventListener('click', closeDeckText);
+    document.getElementById('deck-text-modal').addEventListener('click', e => {
+      if (e.target.id === 'deck-text-modal') closeDeckText();
+    });
+    document.getElementById('deck-text-action').addEventListener('click', async () => {
+      const area = document.getElementById('deck-text-area');
+      const msg = document.getElementById('deck-text-msg');
+      if (deckTextMode === 'export') {
+        try { await navigator.clipboard.writeText(area.value); msg.textContent = 'Copied!'; }
+        catch (err) { area.select(); msg.textContent = 'Select the text and copy it with Ctrl+C.'; }
+        return;
+      }
+      const { deck, unknown } = textToDeck(area.value);
+      if (!Object.keys(deck.main).length && !Object.keys(deck.side).length) {
+        msg.textContent = 'No cards found. Use lines like "3 Defy" under section headings such as MainDeck:.';
+        return;
+      }
+      const created = createDeck(`Imported deck ${deckState.decks.length + 1}`, deck);
+      selectDeck(created.id);
+      closeDeckText();
+      if (unknown.length) alert(`Imported, but these lines were not recognized:\n${unknown.join('\n')}`);
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeDeckText();
     });
 
     function openCardView(name) {
