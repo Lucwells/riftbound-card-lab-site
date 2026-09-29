@@ -1156,7 +1156,6 @@
         <button class="deck-btn danger" id="deck-delete">Delete</button>
       </div>
       <div class="legend-caption">Decks save in this browser only (localStorage). Export gives you a text list to copy; paste one into Import to bring a deck back or move it to another device.</div>
-      <div id="deck-hover-preview" class="deck-hover-preview" hidden><img alt=""></div>
       <div id="deck-text-modal" class="deck-modal" hidden>
         <div class="deck-modal-box">
           <h3 id="deck-text-title"></h3>
@@ -1182,6 +1181,8 @@
         </div>
       </div>
     </div>
+
+    <div id="deck-hover-preview" class="deck-hover-preview" hidden><img alt=""></div>
 
     <footer>
       Built from real China Set 4 Vendetta data: 15 tournaments (13 City Challenge, 2 Regional/National Open) and 3,760 decks. Colored sample-size dots on the Performance Trends chart flag results backed by very few decks — treat those as noise, not signal, until sample size grows.
@@ -2295,7 +2296,7 @@
       deckState.decks = deckState.decks.filter(d => d.id !== deck.id);
       selectDeck(deckState.decks.length ? deckState.decks[0].id : null);
     });
-    // --- Hold Shift over a card picture to enlarge it ---
+    // --- Hold Shift over a card picture to enlarge it (Deck Builder and Card Gallery) ---
     const hoverPreview = document.getElementById('deck-hover-preview');
     let hoverName = null;
     let hoverX = 0, hoverY = 0;
@@ -2321,7 +2322,7 @@
     }
     const hideHoverPreview = () => { hoverPreview.hidden = true; };
 
-    ['deck-grid', 'deck-zones'].forEach(id => {
+    ['deck-grid', 'deck-zones', 'gallery-grid'].forEach(id => {
       const el = document.getElementById(id);
       el.addEventListener('mousemove', e => {
         const img = e.target.closest('img');
