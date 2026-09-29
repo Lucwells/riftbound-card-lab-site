@@ -347,7 +347,8 @@
   }
   .deck-tile.selected { border-color: var(--teal); box-shadow: 0 0 0 1px var(--teal); }
   .deck-tile.in-deck { border-color: var(--green); }
-  .deck-tile img { width: 100%; display: block; cursor: pointer; }
+  .deck-tile img { width: 100%; display: block; cursor: pointer; aspect-ratio: 744 / 1039; background: var(--surface-2); }
+  .deck-grid.landscape .deck-tile img { aspect-ratio: 1039 / 744; }
   .deck-tile-info { padding: 8px 10px 4px; font-size: 12px; font-weight: 600; line-height: 1.3; }
   .deck-tile-info .tag-chips { margin: 4px 0 0; }
   .deck-tile-ctl { display: flex; align-items: center; gap: 6px; padding: 6px 10px 10px; margin-top: auto; }
@@ -359,7 +360,8 @@
   .deck-thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; padding: 10px; }
   .deck-thumbs.landscape { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
   .deck-thumb { position: relative; display: flex; flex-direction: column; gap: 4px; }
-  .deck-thumb img { width: 100%; display: block; border-radius: 6px; cursor: pointer; }
+  .deck-thumb img { width: 100%; display: block; border-radius: 6px; cursor: pointer; aspect-ratio: 744 / 1039; background: var(--surface-2); }
+  .deck-thumbs.landscape .deck-thumb img { aspect-ratio: 1039 / 744; }
   .deck-thumb-badge {
     position: absolute; top: 4px; right: 4px; background: rgba(13,17,23,0.85); color: var(--teal);
     border: 1px solid var(--teal); border-radius: 999px; font-size: 11px; font-weight: 700; padding: 1px 7px;
@@ -2070,6 +2072,10 @@
         tagBox.innerHTML = '';
         return;
       }
+      // Rebuilding the panel resets scroll positions; remember and restore them
+      const summary = document.querySelector('.deck-summary');
+      const panelScroll = summary.scrollTop;
+      const pageScroll = window.scrollY;
       const sorted = obj => Object.keys(obj).sort((a, b) => a.localeCompare(b));
       const zoneHtml = (id, label, target, total, thumbs, landscape) => `<div class="deck-zone${ZONE_STEP[id] === deckStep ? ' active' : ''}">
         <h3 data-goto="${ZONE_STEP[id]}" title="Click to change"><span><span class="zone-name">${label}</span><span class="zone-edit">change</span></span>
@@ -2102,6 +2108,8 @@
       tagBox.innerHTML = '<h3>Tags in deck</h3>' + (entries.length
         ? `<div class="tag-chips">${entries.map(([t, c]) => `<span class="tag-chip">${dkEsc(t)}<b>${c}</b></span>`).join('')}</div>`
         : '<div class="deck-empty" style="padding:0">No tagged cards in this deck yet.</div>');
+      summary.scrollTop = panelScroll;
+      if (window.scrollY !== pageScroll) window.scrollTo(0, pageScroll);
     }
 
     // Cards shown for the current step, before search / type filters
