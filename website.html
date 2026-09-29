@@ -297,6 +297,62 @@
     align-items: center;
   }
 
+  .tag-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+  .tag-chip {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.08);
+    color: var(--text-muted);
+  }
+
+  /* Deck builder */
+  .deck-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
+  .deck-bar select, .deck-bar input, .deck-pick-filters input, .deck-pick-filters select {
+    background: var(--surface); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 13px;
+  }
+  .deck-bar input#deck-name { min-width: 220px; }
+  .deck-btn {
+    background: var(--surface-2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 12px; font: inherit; font-size: 13px; cursor: pointer;
+  }
+  .deck-btn:hover { border-color: var(--teal); }
+  .deck-btn.danger:hover { border-color: var(--red); color: var(--red); }
+  .deck-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 800px) { .deck-cols { grid-template-columns: 1fr; } }
+  .deck-pick-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .deck-pick-filters input { flex: 1; min-width: 140px; }
+  .deck-pool { max-height: 640px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+  .deck-row {
+    display: flex; align-items: center; gap: 8px; padding: 6px 10px;
+    border-bottom: 1px solid var(--border); font-size: 13px;
+  }
+  .deck-row:last-child { border-bottom: none; }
+  .deck-row-name { flex: 1; cursor: pointer; min-width: 0; }
+  .deck-row-name:hover { color: var(--teal); }
+  .deck-row .tag-chips { margin: 3px 0 0; }
+  .deck-row-meta { color: var(--text-muted); font-size: 11px; }
+  .deck-qty { min-width: 18px; text-align: center; font-weight: 600; }
+  .deck-mini {
+    background: var(--surface-2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; width: 26px; height: 26px; cursor: pointer; font: inherit;
+  }
+  .deck-mini:hover { border-color: var(--teal); color: var(--teal); }
+  .deck-mini.side { width: auto; padding: 0 6px; font-size: 11px; }
+  .deck-zone { margin-bottom: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+  .deck-zone h3 {
+    margin: 0; padding: 8px 10px; font-family: 'Barlow Condensed', sans-serif;
+    font-size: 16px; display: flex; justify-content: space-between; border-bottom: 1px solid var(--border);
+  }
+  .deck-zone h3 .count.ok { color: var(--green); }
+  .deck-zone h3 .count.bad { color: var(--gold); }
+  .deck-empty { padding: 10px; color: var(--text-muted); font-size: 12px; }
+  .deck-tagsum { margin-bottom: 14px; }
+  .deck-tagsum h3 { margin: 0 0 6px; font-family: 'Barlow Condensed', sans-serif; font-size: 16px; }
+  .deck-tagsum .tag-chip { font-size: 12px; padding: 3px 9px; }
+  .deck-tagsum .tag-chip b { color: var(--teal); margin-left: 4px; }
+
   .domain-badge {
     font-size: 10px;
     font-weight: 600;
@@ -799,6 +855,7 @@
       <button class="tab-btn" data-tab="trends">Performance Trends</button>
       <button class="tab-btn" data-tab="bestdecks">Best Decks</button>
       <button class="tab-btn" data-tab="gallery">Card Gallery</button>
+      <button class="tab-btn" data-tab="decks">Deck Builder</button>
     </div>
 
     <div id="tab-cardstats" class="tab-panel">
@@ -1029,6 +1086,42 @@
       <div id="card-lightbox" class="lightbox" hidden>
         <img id="lightbox-img" src="" alt="">
         <div class="lightbox-caption" id="lightbox-caption"></div>
+      </div>
+    </div>
+
+    <div id="tab-decks" class="tab-panel" hidden>
+      <div class="deck-bar">
+        <select id="deck-select" aria-label="Saved decks"></select>
+        <input id="deck-name" type="text" placeholder="Deck name" autocomplete="off">
+        <button class="deck-btn" id="deck-new">New</button>
+        <button class="deck-btn" id="deck-dup">Duplicate</button>
+        <button class="deck-btn" id="deck-export">Export</button>
+        <button class="deck-btn" id="deck-import">Import</button>
+        <button class="deck-btn danger" id="deck-delete">Delete</button>
+        <input id="deck-import-file" type="file" accept=".json,application/json" hidden>
+      </div>
+      <div class="legend-caption">Decks save in this browser only (localStorage). Use Export to back them up or move them to another device.</div>
+      <div class="deck-cols">
+        <div>
+          <div class="deck-pick-filters">
+            <input id="deck-pick-search" type="text" placeholder="Search cards to add..." autocomplete="off">
+            <select id="deck-pick-domain">
+              <option value="">All Domains</option>
+              <option>Fury</option><option>Calm</option><option>Mind</option>
+              <option>Body</option><option>Chaos</option><option>Order</option>
+            </select>
+            <select id="deck-pick-type">
+              <option value="">All Types</option>
+              <option>Legend</option><option>Unit</option><option>Spell</option>
+              <option>Gear</option><option>Battlefield</option><option>Rune</option>
+            </select>
+          </div>
+          <div id="deck-pool" class="deck-pool"></div>
+        </div>
+        <div>
+          <div id="deck-tagsum" class="deck-tagsum"></div>
+          <div id="deck-zones"></div>
+        </div>
       </div>
     </div>
 
@@ -1516,6 +1609,7 @@
         document.getElementById('tab-trends').hidden = btn.dataset.tab !== 'trends';
         document.getElementById('tab-bestdecks').hidden = btn.dataset.tab !== 'bestdecks';
         document.getElementById('tab-gallery').hidden = btn.dataset.tab !== 'gallery';
+        document.getElementById('tab-decks').hidden = btn.dataset.tab !== 'decks';
       });
     });
 
@@ -1523,6 +1617,7 @@
     // Loads the real 928-card dataset from card_gallery_data.json, and
     // renders it in batches as the user scrolls, rather than all at once
     let ALL_CARDS = [];
+    let CARD_TAGS = {}; // card name -> [tag, ...], hand-edited in card_tags.json
     let filteredCards = [];
     let renderedCount = 0;
     const BATCH_SIZE = 40;
@@ -1533,6 +1628,10 @@
         const response = await fetch('card_gallery_data.json');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         ALL_CARDS = await response.json();
+        try {
+          const tagResponse = await fetch('card_tags.json', { cache: 'no-cache' });
+          if (tagResponse.ok) CARD_TAGS = await tagResponse.json();
+        } catch (err) { /* tags are optional; gallery works without them */ }
         populateTypeFilter();
         populateSetFilter();
         applyFilters();
@@ -1606,6 +1705,12 @@
       renderNextBatch();
     }
 
+    function tagChipsHtml(name) {
+      const tags = CARD_TAGS[name] || [];
+      if (!tags.length) return '';
+      return `<div class="tag-chips">${tags.map(t => `<span class="tag-chip">${t}</span>`).join('')}</div>`;
+    }
+
     function cardTileHtml(card) {
       const domainBadges = card.domain.map(d =>
         `<span class="domain-badge ${d.toLowerCase()}">${d}</span>`
@@ -1615,6 +1720,7 @@
           <img src="${card.image}" alt="${card.name}" loading="lazy">
           <div class="gallery-card-info">
             <div class="gallery-card-name">${card.name}</div>
+            ${tagChipsHtml(card.name)}
             <div class="gallery-card-meta">
               <span>${card.publicCode}</span>
               ${domainBadges}
@@ -1631,6 +1737,8 @@
       document.getElementById('lightbox-img').src = tile.dataset.image;
       document.getElementById('lightbox-img').alt = tile.dataset.name;
       document.getElementById('lightbox-caption').textContent = `${tile.dataset.name} · ${tile.dataset.code}`;
+      const tags = CARD_TAGS[tile.dataset.name] || [];
+      if (tags.length) document.getElementById('lightbox-caption').textContent += ` · ${tags.join(', ')}`;
       document.getElementById('card-lightbox').hidden = false;
     });
 
@@ -1689,7 +1797,320 @@
     document.getElementById('gallery-set-filter').addEventListener('change', applyFilters);
     document.getElementById('gallery-type-filter').addEventListener('change', applyFilters);
 
-    loadGalleryData();
+    // --- Deck Builder tab ---
+    // All storage goes through DeckStore so localStorage can later be
+    // swapped for a backend (accounts) without touching the UI code.
+    const DeckStore = {
+      KEY: 'riftboundCardLab.decks.v1',
+      load() {
+        try { return JSON.parse(localStorage.getItem(this.KEY)) || { decks: [], activeId: null }; }
+        catch (err) { return { decks: [], activeId: null }; }
+      },
+      save(state) {
+        try { localStorage.setItem(this.KEY, JSON.stringify(state)); } catch (err) { /* private mode / quota */ }
+      }
+    };
+
+    // Soft targets shown as counts; nothing is blocked except copy limits.
+    const DECK_ZONES = [
+      { id: 'legend',      label: 'Legend',       target: 1,  types: ['Legend'],      maxCopies: 1 },
+      { id: 'main',        label: 'Main Deck',    target: 40, types: ['Unit', 'Spell', 'Gear'], maxCopies: 3 },
+      { id: 'battlefield', label: 'Battlefields', target: 3,  types: ['Battlefield'], maxCopies: 1 },
+      { id: 'rune',        label: 'Runes',        target: 12, types: ['Rune'],        maxCopies: 12 },
+    ];
+    const SIDEBOARD_TARGET = 8;
+
+    // Data has no champion flag; champion units are the "Name, Epithet" Units.
+    const isChampionUnit = card => card.cardType.includes('Unit') && card.name.includes(', ');
+    // Legend card name -> champion name (legend_champions.json), so a legend
+    // only accepts its own champion, e.g. "Nine-Tailed Fox" -> "Ahri".
+    let LEGEND_CHAMPIONS = {};
+    const championMatches = (card, champion) => {
+      const prefix = card.name.split(', ')[0];
+      return champion === prefix || champion.endsWith(' ' + prefix); // "Master Yi" vs "Yi, Honed"
+    };
+    function deckLegendName(deck) {
+      return Object.keys(deck.main).find(n => CARD_BY_NAME.has(n) && zoneForCard(CARD_BY_NAME.get(n)).id === 'legend') || null;
+    }
+    // A champion unit is valid if the deck has no mapped legend yet, or it matches the legend
+    function canBeChosenChampion(card, deck) {
+      if (!isChampionUnit(card)) return false;
+      const champion = deck && LEGEND_CHAMPIONS[deckLegendName(deck)];
+      return !champion || championMatches(card, champion);
+    }
+
+    let deckState = DeckStore.load();
+    let CARD_BY_NAME = new Map();
+
+    const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    const dkEsc = s => String(s).replace(/[&<>"']/g, c => HTML_ESCAPES[c]);
+    const deckSave = () => DeckStore.save(deckState);
+    const activeDeck = () => deckState.decks.find(d => d.id === deckState.activeId) || null;
+    const newDeckId = () => 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+    function zoneForCard(card) {
+      return DECK_ZONES.find(z => z.types.includes(card.cardType[0])) || DECK_ZONES[1];
+    }
+
+    function createDeck(name, base) {
+      const deck = { main: {}, side: {}, champion: null, ...(base || {}), id: newDeckId(), name, updated: Date.now() };
+      deckState.decks.push(deck);
+      deckState.activeId = deck.id;
+      deckSave();
+      return deck;
+    }
+
+    function changeCount(name, bucket, delta) {
+      const deck = activeDeck();
+      const card = CARD_BY_NAME.get(name);
+      if (!deck || !card) return;
+      const zone = zoneForCard(card);
+      const cur = deck[bucket][name] || 0;
+      // Copy limit is shared across main + side
+      const other = (deck[bucket === 'main' ? 'side' : 'main'][name] || 0) + (deck.champion === name ? 1 : 0);
+      const next = Math.min(Math.max(0, cur + delta), zone.maxCopies - other);
+      if (next <= 0) delete deck[bucket][name]; else deck[bucket][name] = next;
+      // Only one Legend in the main deck: adding a new one replaces the old
+      if (zone.id === 'legend' && bucket === 'main' && next > 0) {
+        Object.keys(deck.main).forEach(n => {
+          const c = CARD_BY_NAME.get(n);
+          if (c && n !== name && zoneForCard(c).id === 'legend') delete deck.main[n];
+        });
+      }
+      deck.updated = Date.now();
+      deckSave();
+      renderDeckZones();
+      renderDeckPool();
+    }
+
+    function setChampion(name) {
+      const deck = activeDeck();
+      const card = CARD_BY_NAME.get(name);
+      if (!deck || (name && (!card || !canBeChosenChampion(card, deck)))) return;
+      if (name) {
+        // Chosen champion uses one of the 3 copies allowed across the deck
+        const used = (deck.main[name] || 0) + (deck.side[name] || 0);
+        if (used >= 3) return;
+      }
+      deck.champion = name || null;
+      deck.updated = Date.now();
+      deckSave();
+      renderDeckZones();
+      renderDeckPool();
+    }
+
+    function renderDeckBar() {
+      const sel = document.getElementById('deck-select');
+      sel.innerHTML = deckState.decks.length
+        ? deckState.decks.map(d => `<option value="${dkEsc(d.id)}"${d.id === deckState.activeId ? ' selected' : ''}>${dkEsc(d.name)}</option>`).join('')
+        : '<option value="">No decks yet</option>';
+      const deck = activeDeck();
+      const nameInput = document.getElementById('deck-name');
+      nameInput.value = deck ? deck.name : '';
+      nameInput.disabled = !deck;
+    }
+
+    function deckTagChips(name) {
+      const tags = CARD_TAGS[name] || [];
+      return tags.length ? `<div class="tag-chips">${tags.map(t => `<span class="tag-chip">${dkEsc(t)}</span>`).join('')}</div>` : '';
+    }
+
+    function deckCardRow(name, count, bucket) {
+      const card = CARD_BY_NAME.get(name);
+      const meta = card ? `${card.cardType.join('/')} · ${card.domain.join('/')}` : 'unknown card';
+      return `<div class="deck-row" data-name="${dkEsc(name)}" data-bucket="${bucket}">
+        <div class="deck-row-name" data-act="view">${dkEsc(name)}
+          <div class="deck-row-meta">${dkEsc(meta)}</div>
+          ${deckTagChips(name)}
+        </div>
+        <button class="deck-mini" data-act="dec">−</button>
+        <span class="deck-qty">${count}</span>
+        <button class="deck-mini" data-act="inc">+</button>
+      </div>`;
+    }
+
+    function renderDeckZones() {
+      const box = document.getElementById('deck-zones');
+      const tagBox = document.getElementById('deck-tagsum');
+      const deck = activeDeck();
+      if (!deck) {
+        box.innerHTML = '<p class="gallery-empty">Create a deck with “New” to start.</p>';
+        tagBox.innerHTML = '';
+        return;
+      }
+      const sorted = obj => Object.keys(obj).sort((a, b) => a.localeCompare(b));
+      const zoneHtml = (label, target, total, rows) => `<div class="deck-zone"><h3><span>${label}</span>
+        <span class="count ${total === target ? 'ok' : 'bad'}">${total} / ${target}</span></h3>
+        ${rows || '<div class="deck-empty">Empty</div>'}</div>`;
+      let html = '';
+      DECK_ZONES.forEach(zone => {
+        if (zone.id === 'main') {
+          const champ = deck.champion && CARD_BY_NAME.has(deck.champion) ? deck.champion : null;
+          html += zoneHtml('Chosen Champion', 1, champ ? 1 : 0, champ
+            ? `<div class="deck-row" data-name="${dkEsc(champ)}">
+                <div class="deck-row-name" data-act="view">${dkEsc(champ)}
+                  <div class="deck-row-meta">${dkEsc(CARD_BY_NAME.get(champ).domain.join('/'))}${
+                    canBeChosenChampion(CARD_BY_NAME.get(champ), deck) ? '' : ' · <span style="color:var(--gold)">doesn\'t match this Legend</span>'}</div>
+                  ${deckTagChips(champ)}
+                </div>
+                <button class="deck-mini" data-act="unchamp" title="Remove chosen champion">−</button>
+              </div>`
+            : '<div class="deck-empty">Pick a champion unit with the +CH button.</div>');
+        }
+        const names = sorted(deck.main).filter(n => CARD_BY_NAME.has(n) && zoneForCard(CARD_BY_NAME.get(n)).id === zone.id);
+        const total = names.reduce((s, n) => s + deck.main[n], 0);
+        html += zoneHtml(zone.label, zone.target, total, names.map(n => deckCardRow(n, deck.main[n], 'main')).join(''));
+      });
+      const sideNames = sorted(deck.side);
+      const sideTotal = sideNames.reduce((s, n) => s + deck.side[n], 0);
+      html += zoneHtml('Sideboard', SIDEBOARD_TARGET, sideTotal, sideNames.map(n => deckCardRow(n, deck.side[n], 'side')).join(''));
+      box.innerHTML = html;
+
+      // Tag totals across the main deck (copies counted)
+      const tagCounts = {};
+      Object.entries(deck.main).forEach(([n, c]) => (CARD_TAGS[n] || []).forEach(t => { tagCounts[t] = (tagCounts[t] || 0) + c; }));
+      if (deck.champion) (CARD_TAGS[deck.champion] || []).forEach(t => { tagCounts[t] = (tagCounts[t] || 0) + 1; });
+      const entries = Object.entries(tagCounts).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+      tagBox.innerHTML = '<h3>Tags in deck</h3>' + (entries.length
+        ? `<div class="tag-chips">${entries.map(([t, c]) => `<span class="tag-chip">${dkEsc(t)}<b>${c}</b></span>`).join('')}</div>`
+        : '<div class="deck-empty" style="padding:0">No tagged cards in this deck yet.</div>');
+    }
+
+    function renderDeckPool() {
+      const q = document.getElementById('deck-pick-search').value.trim().toLowerCase();
+      const dom = document.getElementById('deck-pick-domain').value;
+      const type = document.getElementById('deck-pick-type').value;
+      const deck = activeDeck();
+      const list = ALL_CARDS.filter(c =>
+        (!q || c.name.toLowerCase().includes(q)) &&
+        (!dom || c.domain.includes(dom)) &&
+        (!type || c.cardType.includes(type)));
+      const shown = list.slice(0, 80);
+      document.getElementById('deck-pool').innerHTML = shown.map(c => {
+        const inMain = deck ? (deck.main[c.name] || 0) : 0;
+        const inSide = deck ? (deck.side[c.name] || 0) : 0;
+        const isChosen = deck && deck.champion === c.name;
+        const inDeck = inMain || inSide || isChosen
+          ? ` · in deck: ${inMain}${isChosen ? ' +champion' : ''}${inSide ? ` +${inSide} side` : ''}` : '';
+        return `<div class="deck-row" data-name="${dkEsc(c.name)}">
+          <div class="deck-row-name" data-act="view">${dkEsc(c.name)}
+            <div class="deck-row-meta">${dkEsc(c.cardType.join('/'))} · ${dkEsc(c.domain.join('/'))}${inDeck}</div>
+            ${deckTagChips(c.name)}
+          </div>
+          ${canBeChosenChampion(c, deck) ? '<button class="deck-mini side" data-act="champ" title="Set as Chosen Champion">+CH</button>' : ''}
+          <button class="deck-mini side" data-act="side" title="Add to sideboard">+SB</button>
+          <button class="deck-mini" data-act="add" title="Add to deck">+</button>
+        </div>`;
+      }).join('')
+        + (list.length > shown.length ? `<div class="deck-empty">Showing first ${shown.length} of ${list.length} — refine the search.</div>` : '')
+        + (!list.length ? '<div class="deck-empty">No cards match.</div>' : '');
+    }
+
+    function refreshDeckUi() {
+      renderDeckBar();
+      renderDeckZones();
+      renderDeckPool();
+    }
+
+    function initDeckBuilder() {
+      CARD_BY_NAME = new Map(ALL_CARDS.map(c => [c.name, c]));
+      fetch('legend_champions.json', { cache: 'no-cache' })
+        .then(r => (r.ok ? r.json() : {}))
+        .then(m => { LEGEND_CHAMPIONS = m; renderDeckZones(); renderDeckPool(); })
+        .catch(() => { /* falls back to any champion unit */ });
+      if (deckState.activeId && !activeDeck()) deckState.activeId = null;
+      if (!deckState.activeId && deckState.decks.length) deckState.activeId = deckState.decks[0].id;
+      refreshDeckUi();
+    }
+
+    document.getElementById('deck-select').addEventListener('change', e => {
+      deckState.activeId = e.target.value || null;
+      deckSave();
+      refreshDeckUi();
+    });
+    document.getElementById('deck-name').addEventListener('input', e => {
+      const deck = activeDeck();
+      if (!deck) return;
+      deck.name = e.target.value.trim() || 'Untitled deck';
+      deck.updated = Date.now();
+      deckSave();
+      const opt = document.querySelector(`#deck-select option[value="${deck.id}"]`);
+      if (opt) opt.textContent = deck.name;
+    });
+    document.getElementById('deck-new').addEventListener('click', () => {
+      createDeck(`New deck ${deckState.decks.length + 1}`);
+      refreshDeckUi();
+      document.getElementById('deck-name').select();
+    });
+    document.getElementById('deck-dup').addEventListener('click', () => {
+      const deck = activeDeck();
+      if (!deck) return;
+      createDeck(`${deck.name} (copy)`, { main: { ...deck.main }, side: { ...deck.side }, champion: deck.champion });
+      refreshDeckUi();
+    });
+    document.getElementById('deck-delete').addEventListener('click', () => {
+      const deck = activeDeck();
+      if (!deck || !confirm(`Delete "${deck.name}"? This cannot be undone.`)) return;
+      deckState.decks = deckState.decks.filter(d => d.id !== deck.id);
+      deckState.activeId = deckState.decks.length ? deckState.decks[0].id : null;
+      deckSave();
+      refreshDeckUi();
+    });
+    document.getElementById('deck-export').addEventListener('click', () => {
+      const payload = { app: 'riftbound-card-lab', version: 1, decks: deckState.decks };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'riftbound-decks.json';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+    document.getElementById('deck-import').addEventListener('click', () => document.getElementById('deck-import-file').click());
+    document.getElementById('deck-import-file').addEventListener('change', async e => {
+      const file = e.target.files[0];
+      e.target.value = '';
+      if (!file) return;
+      try {
+        const data = JSON.parse(await file.text());
+        if (!Array.isArray(data.decks)) throw new Error('no decks array');
+        data.decks.forEach(d => createDeck(String(d.name || 'Imported deck'), { main: d.main || {}, side: d.side || {}, champion: d.champion || null }));
+        refreshDeckUi();
+      } catch (err) {
+        alert(`Couldn't import that file (${err.message}).`);
+      }
+    });
+
+    function openCardView(name) {
+      const card = CARD_BY_NAME.get(name);
+      if (!card) return;
+      document.getElementById('lightbox-img').src = card.image;
+      document.getElementById('lightbox-img').alt = card.name;
+      const tags = CARD_TAGS[name] || [];
+      document.getElementById('lightbox-caption').textContent = `${card.name} · ${card.publicCode}` + (tags.length ? ` · ${tags.join(', ')}` : '');
+      document.getElementById('card-lightbox').hidden = false;
+    }
+
+    function deckRowClick(e) {
+      const btn = e.target.closest('[data-act]');
+      const row = e.target.closest('.deck-row');
+      if (!btn || !row) return;
+      const name = row.dataset.name;
+      const act = btn.dataset.act;
+      if (act === 'view') openCardView(name);
+      else if (act === 'add') changeCount(name, 'main', 1);
+      else if (act === 'champ') setChampion(name);
+      else if (act === 'unchamp') setChampion(null);
+      else if (act === 'side') changeCount(name, 'side', 1);
+      else if (act === 'inc') changeCount(name, row.dataset.bucket, 1);
+      else if (act === 'dec') changeCount(name, row.dataset.bucket, -1);
+    }
+    document.getElementById('deck-pool').addEventListener('click', deckRowClick);
+    document.getElementById('deck-zones').addEventListener('click', deckRowClick);
+    ['deck-pick-search', 'deck-pick-domain', 'deck-pick-type'].forEach(id => {
+      document.getElementById(id).addEventListener(id === 'deck-pick-search' ? 'input' : 'change', renderDeckPool);
+    });
+
+    loadGalleryData().then(initDeckBuilder);
 
     // --- Best Decks tab ---
     // Real per-tournament best-deck data, built by BuildLegendsTable.py into
