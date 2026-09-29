@@ -2002,6 +2002,19 @@
       updateTileCounts();
     }
 
+    // Move one copy between main deck and sideboard (copy total is unchanged)
+    function swapCopy(name, fromBucket) {
+      const deck = activeDeck();
+      if (!deck || !(deck[fromBucket][name] > 0)) return;
+      const toBucket = fromBucket === 'main' ? 'side' : 'main';
+      deck[fromBucket][name] -= 1;
+      if (deck[fromBucket][name] <= 0) delete deck[fromBucket][name];
+      deck[toBucket][name] = (deck[toBucket][name] || 0) + 1;
+      touchDeck(deck);
+      renderDeckZones();
+      updateTileCounts();
+    }
+
     // --- Rendering ---
     function renderDeckBar() {
       const sel = document.getElementById('deck-select');
@@ -2031,10 +2044,14 @@
     function deckThumb(name, count, bucket, controls) {
       const card = CARD_BY_NAME.get(name);
       if (!card) return '';
+      // Sideboard-eligible cards (main-deck types) get a main <-> sideboard swap button
+      const canSwap = controls && zoneForCard(card).id === 'main';
+      const swapTitle = bucket === 'main' ? 'Move one copy to sideboard' : 'Move one copy to main deck';
       return `<div class="deck-thumb" data-name="${dkEsc(name)}" data-bucket="${bucket}">
-        <img src="${dkEsc(card.image)}" alt="${dkEsc(name)}" loading="lazy" title="${dkEsc(name)}" data-act="view">
+        <img src="${dkEsc(card.image)}" alt="${dkEsc(name)}" loading="lazy" title="${dkEsc(name)}" data-act="${controls ? 'inc' : 'view'}">
         ${count > 1 || controls ? `<span class="deck-thumb-badge">×${count}</span>` : ''}
-        ${controls ? '<div class="deck-thumb-ctl"><button class="deck-mini" data-act="dec">−</button><button class="deck-mini" data-act="inc">+</button></div>' : ''}
+        ${controls ? `<div class="deck-thumb-ctl"><button class="deck-mini" data-act="dec">−</button>${
+          canSwap ? `<button class="deck-mini" data-act="swap" title="${swapTitle}">⇄</button>` : ''}<button class="deck-mini" data-act="inc">+</button></div>` : ''}
       </div>`;
     }
 
@@ -2105,7 +2122,7 @@
       const heads = {
         legend: ['Choose your Legend', 'Click a Legend to pick it. Its domains decide which cards you can play.'],
         champion: ['Choose your Chosen Champion', legend ? `Click a champion unit for ${legend.name}.` : ''],
-        cards: ['Add cards', `Showing ${doms} and Colorless cards. Use + / − for the main deck, +SB for the sideboard.`],
+        cards: ['Add cards', `Showing ${doms} and Colorless cards. Left click a card to add it, right click to remove it (or use + / −). +SB adds to the sideboard; shift+click enlarges.`],
         battlefields: ['Pick Battlefields', 'Choose 3 different Battlefields.'],
         runes: ['Pick Runes', `Choose ${RUNE_TOTAL} runes from your Legend's domains (${doms}).`],
       };
@@ -2121,7 +2138,7 @@
         return `<div class="deck-tile${selected ? ' selected' : ''}" data-name="${name}" data-act="${deckStep === 'legend' ? 'pick-legend' : 'pick-champ'}">
           <img src="${dkEsc(card.image)}" alt="${name}" loading="lazy">${info}</div>`;
       }
-      const img = `<img src="${dkEsc(card.image)}" alt="${name}" loading="lazy" data-act="view">`;
+      const img = `<img src="${dkEsc(card.image)}" alt="${name}" loading="lazy" data-act="add" title="Left click to add, right click to remove">`;
       const sideBtn = deckStep === 'cards' ? '<button class="deck-mini wide" data-act="side" title="Add to sideboard">+SB</button>' : '';
       return `<div class="deck-tile" data-name="${name}">${img}${info}
         <div class="deck-tile-ctl">
@@ -2282,7 +2299,11 @@
       if (!btn || !host) return;
       const name = host.dataset.name;
       const bucket = host.dataset.bucket || 'main';
-      switch (btn.dataset.act) {
+      let act = btn.dataset.act;
+      // Shift+click on a card picture opens the big view instead of adding
+      if (e.shiftKey && btn.tagName === 'IMG') act = 'view';
+      switch (act) {
+        case 'swap': swapCopy(name, bucket); break;
         case 'view': openCardView(name); break;
         case 'pick-legend': chooseLegend(name); break;
         case 'pick-champ': setChampion(name); break;
@@ -2294,6 +2315,21 @@
     }
     document.getElementById('deck-grid').addEventListener('click', deckClick);
     document.getElementById('deck-zones').addEventListener('click', deckClick);
+
+    // Right-click on a card picture removes one copy (main first, then sideboard)
+    function deckContextMenu(e) {
+      const img = e.target.closest('img[data-act="add"], img[data-act="inc"]');
+      const host = img && img.closest('[data-name]');
+      if (!host) return;
+      e.preventDefault();
+      const name = host.dataset.name;
+      const deck = activeDeck();
+      let bucket = host.dataset.bucket;
+      if (!bucket) bucket = deck && (deck.main[name] || 0) === 0 && (deck.side[name] || 0) > 0 ? 'side' : 'main';
+      changeCount(name, bucket, -1);
+    }
+    document.getElementById('deck-grid').addEventListener('contextmenu', deckContextMenu);
+    document.getElementById('deck-zones').addEventListener('contextmenu', deckContextMenu);
     document.getElementById('deck-steps').addEventListener('click', e => {
       const btn = e.target.closest('[data-step]');
       if (btn && !btn.disabled) goToStep(btn.dataset.step);
