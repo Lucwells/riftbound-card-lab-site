@@ -394,6 +394,8 @@
   .deck-mini:hover { border-color: var(--teal); color: var(--teal); }
   .deck-mini.wide { width: auto; padding: 0 8px; font-size: 11px; }
   .deck-zone { margin-bottom: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+  .deck-zone-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .deck-zone-row .deck-zone { margin-bottom: 0; }
   .deck-zone.active { border-color: var(--teal); }
   .deck-zone h3 { cursor: pointer; }
   .deck-zone h3:hover .zone-name { color: var(--teal); }
@@ -2112,18 +2114,22 @@
         <span class="count ${total === target ? 'ok' : 'bad'}">${total} / ${target}</span></h3>
         ${thumbs ? `<div class="deck-thumbs${landscape ? ' landscape' : ''}">${thumbs}</div>` : '<div class="deck-empty">Empty — click to choose</div>'}</div>`;
       let html = '';
+      let legendHtml = '';
       DECK_ZONES.forEach(zone => {
         if (zone.id === 'main') {
+          // Legend and Chosen Champion hold one card each, so they share a row
           const champ = deck.champion && CARD_BY_NAME.has(deck.champion) ? deck.champion : null;
           const mismatch = champ && !canBeChosenChampion(CARD_BY_NAME.get(champ), deck);
-          html += zoneHtml('champion', 'Chosen Champion', 1, champ ? 1 : 0, champ ? deckThumb(champ, 1, 'main', false) : '', false);
-          if (mismatch) html = html.replace(/<\/div>\s*$/, '<div class="deck-empty" style="color:var(--gold)">Doesn\'t match this Legend</div></div>');
+          let champHtml = zoneHtml('champion', 'Chosen Champion', 1, champ ? 1 : 0, champ ? deckThumb(champ, 1, 'main', false) : '', false);
+          if (mismatch) champHtml = champHtml.replace(/<\/div>\s*$/, '<div class="deck-empty" style="color:var(--gold)">Doesn\'t match this Legend</div></div>');
+          html += `<div class="deck-zone-row">${legendHtml}${champHtml}</div>`;
         }
         const names = sorted(deck.main).filter(n => CARD_BY_NAME.has(n) && zoneForCard(CARD_BY_NAME.get(n)).id === zone.id);
         const total = names.reduce((s, n) => s + deck.main[n], 0);
         // Legend is a single pick: no +/- controls
         const controls = zone.id !== 'legend';
-        html += zoneHtml(zone.id, zone.label, zone.target, total, names.map(n => deckThumb(n, deck.main[n], 'main', controls)).join(''), zone.id === 'battlefield');
+        const zoneBlock = zoneHtml(zone.id, zone.label, zone.target, total, names.map(n => deckThumb(n, deck.main[n], 'main', controls)).join(''), zone.id === 'battlefield');
+        if (zone.id === 'legend') legendHtml = zoneBlock; else html += zoneBlock;
       });
       const sideNames = sorted(deck.side);
       const sideTotal = sideNames.reduce((s, n) => s + deck.side[n], 0);
