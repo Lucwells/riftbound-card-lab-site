@@ -1,6 +1,26 @@
 {
   "Abandon": ["Counter Spell", "Predict"],
-  "Abandoned Hall": ["Pump"],
+  "Abandoned Hall": ["Might Increase"],
   "Acceleration Gate": ["Ready"],
-  "Acceptable Losses": ["Gear Hate"]
+  "Acceptable Losses": ["Gear Hate"],
+  "Adaptatron": ["Gear Hate", "Buffs"],
+  "Affectionate Poro": ["Draw"],
+  "Against the Odds": ["Might Increase"],
+  "Ahri, Alluring": ["Hold"],
+  "Ahri, Inquisitive": ["Might Decrease"],
+  "Akali, Deadly Weapon": ["Empower", "Movement Damage"],
+  "Akali, Silent": ["Untargetable", "Movement", "Might Increase"],
+  "Akshan, Mischievous": ["Gear Hate", "Weaponmaster"],
+  "Albus Ferros": ["Spend Buff", "Channel"],
+  "Allay, Eager Admirer": ["Deflect"],
+  "Alpha Strike": ["Might Damage", "XP", "Anti Swarm"],
+  "Alpha Wildclaw": ["Tank", "Ally Protection"],
+  "Altar of Blood": ["Revive"],
+  "Altar of Memories": ["Unit Exhaust", "Draw"],
+  "Altar to Unity": ["Hold"],
+  "Amateur Recital": ["Hold", "Movement"],
+  "Ambessa, Respected and Feared": ["Empower", "Assault", "Kill Enemy"],
+  "Ambessa, The Wolf": ["Empower", "Damage Resistant"],
+  "Ancient Henge": ["Power Reduction"],
+  "Ancient Warmonger": ["Accelerate", "Anti Swarm"]
 }
