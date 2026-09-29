@@ -351,6 +351,10 @@
   .deck-grid.landscape .deck-tile img { aspect-ratio: 1039 / 744; }
   .deck-tile-info { padding: 8px 10px 4px; font-size: 12px; font-weight: 600; line-height: 1.3; }
   .deck-tile-info .tag-chips { margin: 4px 0 0; }
+  .deck-cost {
+    display: inline-block; min-width: 20px; margin-right: 6px; padding: 0 5px; text-align: center;
+    background: var(--teal); color: #0D1117; border-radius: 999px; font-size: 11px; font-weight: 700;
+  }
   .deck-tile-ctl { display: flex; align-items: center; gap: 6px; padding: 6px 10px 10px; margin-top: auto; }
   .deck-tile-ctl .grow { flex: 1; }
   .deck-more { margin: 14px 0; text-align: center; }
@@ -1656,7 +1660,7 @@
     async function loadGalleryData() {
       const grid = document.getElementById('gallery-grid');
       try {
-        const response = await fetch('card_gallery_data.json');
+        const response = await fetch('card_gallery_data.json', { cache: 'no-cache' });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         ALL_CARDS = await response.json();
         try {
@@ -2143,7 +2147,8 @@
 
     function tileHtml(card, deck) {
       const name = dkEsc(card.name);
-      const info = `<div class="deck-tile-info">${name}${deckTagChips(card.name)}</div>`;
+      const cost = card.energy == null ? '' : `<span class="deck-cost" title="Energy cost">${card.energy}</span>`;
+      const info = `<div class="deck-tile-info">${cost}${name}${deckTagChips(card.name)}</div>`;
       if (deckStep === 'legend' || deckStep === 'champion') {
         const selected = deckStep === 'legend' ? deckLegendName(deck) === card.name : deck.champion === card.name;
         return `<div class="deck-tile${selected ? ' selected' : ''}" data-name="${name}" data-act="${deckStep === 'legend' ? 'pick-legend' : 'pick-champ'}">
@@ -2200,7 +2205,8 @@
       const q = deckQuery.trim().toLowerCase();
       const list = stepPool(deck)
         .filter(c => (!q || c.name.toLowerCase().includes(q)) && (!deckType || c.cardType.includes(deckType)))
-        .sort((a, b) => a.name.localeCompare(b.name));
+        // Default order: energy cost low to high (no-cost cards last), then name
+        .sort((a, b) => (a.energy ?? 99) - (b.energy ?? 99) || a.name.localeCompare(b.name));
       const shown = list.slice(0, deckShown);
       grid.innerHTML = shown.length ? shown.map(c => tileHtml(c, deck)).join('') : '<p class="gallery-empty">No cards match.</p>';
       more.innerHTML = list.length > shown.length
