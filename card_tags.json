@@ -54,7 +54,7 @@
   "Baccai Witherclaw": ["Empower", "Channel", "Death Knell"],
   "Back Off": ["Hidden", "Stun", "Draw", "Action"],
   "Back to Back": ["Might Increase", "Reaction"],
-  "Back-Alley Bar": ["Battlefield Movement Might Increase"],
+  "Back-Alley Bar": ["Battlefield Movement Trigger", "Battlefield Might Increase"],
   "Baited Hook": ["Unit Sacrifice", "Deck Cycle", "Recycle"],
   "Bandle Soldier": ["Requires XP", "Accelerate"],
   "Bandle Tree": ["Battlefield Hidden"],
