@@ -348,5 +348,9 @@
   "Herald of Spring": ["Hunt", "XP Generation"],
   "Herald of the Arcane": ["Token Generation"],
   "Here to Help": ["Hidden", "Action", "Discount"],
-  "Heroic Charge": ["Action", "Might Increase", "Stun"]
+  "Heroic Charge": ["Action", "Might Increase", "Stun"],
+  "Irresistible Faefolk": ["Enemy Movement"],
+  "Jagged Cutlass": ["Equipment", "Movement Resistant"],
+  "Jhin, Murderous Artist": ["Deflect", "Ganking", "Discount"],
+  "Karthus, Eternal": ["Requires Death Knell"]
 }
