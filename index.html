@@ -2119,16 +2119,13 @@
     // Cards shown for the current step, before search / type filters
     function stepPool(deck) {
       const legend = deckLegendCard(deck);
-      const champion = legend && LEGEND_CHAMPIONS[legend.name];
       if (deckStep === 'legend') return ALL_CARDS.filter(c => c.cardType.includes('Legend'));
       if (deckStep === 'champion') return ALL_CARDS.filter(c => canBeChosenChampion(c, deck));
       if (!legend) return [];
       if (deckStep === 'battlefields') return ALL_CARDS.filter(c => c.cardType.includes('Battlefield'));
       if (deckStep === 'runes') return ALL_CARDS.filter(c => c.cardType.includes('Rune') && cardFitsDomains(c, legend.domain));
-      // cards: units / spells / gear in the legend's domains; other champions' units are excluded
-      return ALL_CARDS.filter(c => zoneForCard(c).id === 'main'
-        && cardFitsDomains(c, legend.domain)
-        && (!isChampionUnit(c) || !champion || championMatches(c, champion)));
+      // cards: units / spells / gear in the legend's domains (any champion's units included)
+      return ALL_CARDS.filter(c => zoneForCard(c).id === 'main' && cardFitsDomains(c, legend.domain));
     }
 
     function stepHeadHtml(deck) {
