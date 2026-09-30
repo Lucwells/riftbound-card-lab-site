@@ -1741,7 +1741,13 @@
       Object.values(CARD_TAGS).forEach(list => list.forEach(t => set.add(t)));
       return [...set].sort((a, b) => a.localeCompare(b));
     }
-    const tagOptionsHtml = () => allTagNames().map(t => `<option value="${t.replace(/"/g, '&quot;')}">${t}</option>`).join('');
+    const tagOptionsHtml = (names = allTagNames()) => names.map(t => `<option value="${t.replace(/"/g, '&quot;')}">${t}</option>`).join('');
+    // Tags found on a given set of cards (deck builder only offers tags that exist in the current step's pool)
+    const tagNamesFor = cards => {
+      const set = new Set();
+      cards.forEach(c => (CARD_TAGS[c.name] || []).forEach(t => set.add(t)));
+      return [...set].sort((a, b) => a.localeCompare(b));
+    };
 
     function populateTagFilter() {
       document.getElementById('gallery-tag-filter').insertAdjacentHTML('beforeend', tagOptionsHtml());
@@ -2266,7 +2272,7 @@
           + (deckStep === 'cards'
             ? `<select id="deck-type"><option value="">All Types</option><option>Unit</option><option>Spell</option><option>Gear</option></select>`
             : '')
-          + `<select id="deck-tag"><option value="">All Tags</option>${tagOptionsHtml()}</select>`;
+          + `<select id="deck-tag"><option value="">All Tags</option>${tagOptionsHtml(tagNamesFor(stepPool(deck)))}</select>`;
         const typeSel = document.getElementById('deck-type');
         if (typeSel) typeSel.value = deckType;
         document.getElementById('deck-tag').value = deckTag;
