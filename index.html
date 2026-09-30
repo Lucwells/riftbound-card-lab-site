@@ -199,8 +199,8 @@
   }
 
   #gallery-search {
-    flex: 1;
-    min-width: 200px;
+    flex: 0 1 200px;
+    min-width: 140px;
     background: var(--surface);
     color: var(--text);
     border: 1px solid var(--border);
@@ -210,7 +210,7 @@
     font-size: 14px;
   }
 
-  #gallery-domain-filter, #gallery-set-filter, #gallery-type-filter {
+  #gallery-domain-filter, #gallery-set-filter, #gallery-type-filter, #gallery-tag-filter {
     background: var(--surface);
     color: var(--text);
     border: 1px solid var(--border);
@@ -337,7 +337,7 @@
   .deck-prompt { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; margin: 0 0 4px; }
   .deck-prompt-sub { color: var(--text-muted); font-size: 13px; margin: 0 0 12px; }
   .deck-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; padding: 8px 0; position: sticky; top: 0; z-index: 20; background: var(--bg); }
-  .deck-filters input { flex: 1; min-width: 140px; }
+  .deck-filters input { flex: 0 1 200px; min-width: 120px; }
 
   .deck-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
   @media (max-width: 1300px) { .deck-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
@@ -1138,6 +1138,9 @@
         <select id="gallery-type-filter">
           <option value="">All Types</option>
         </select>
+        <select id="gallery-tag-filter">
+          <option value="">All Tags</option>
+        </select>
       </div>
       <div class="legend-caption">928 unique playable cards, base printings only (no alt-art or token duplicates). Loads in batches of 40 as you scroll.</div>
 
@@ -1697,6 +1700,7 @@
         } catch (err) { /* tags are optional; gallery works without them */ }
         populateTypeFilter();
         populateSetFilter();
+        populateTagFilter();
         applyFilters();
       } catch (err) {
         grid.innerHTML = `<p class="gallery-empty">
@@ -1731,6 +1735,18 @@
       });
     }
 
+    // Every tag used in card_tags.json, alphabetical
+    function allTagNames() {
+      const set = new Set();
+      Object.values(CARD_TAGS).forEach(list => list.forEach(t => set.add(t)));
+      return [...set].sort((a, b) => a.localeCompare(b));
+    }
+    const tagOptionsHtml = () => allTagNames().map(t => `<option value="${t.replace(/"/g, '&quot;')}">${t}</option>`).join('');
+
+    function populateTagFilter() {
+      document.getElementById('gallery-tag-filter').insertAdjacentHTML('beforeend', tagOptionsHtml());
+    }
+
     function populateTypeFilter() {
       // Build the dropdown from whatever type labels actually exist in
       // the real data, rather than guessing/hardcoding a list - avoids
@@ -1748,7 +1764,8 @@
       });
     }
 
-    function cardMatchesFilters(card, query, domainFilter, setFilter, typeFilter) {
+    function cardMatchesFilters(card, query, domainFilter, setFilter, typeFilter, tagFilter) {
+      if (tagFilter && !(CARD_TAGS[card.name] || []).includes(tagFilter)) return false;
       if (query && !card.name.toLowerCase().includes(query)) return false;
       if (domainFilter && !card.domain.includes(domainFilter)) return false;
       if (setFilter && card.set !== setFilter) return false;
@@ -1761,8 +1778,9 @@
       const domainFilter = document.getElementById('gallery-domain-filter').value;
       const setFilter = document.getElementById('gallery-set-filter').value;
       const typeFilter = document.getElementById('gallery-type-filter').value;
+      const tagFilter = document.getElementById('gallery-tag-filter').value;
 
-      filteredCards = ALL_CARDS.filter(c => cardMatchesFilters(c, query, domainFilter, setFilter, typeFilter));
+      filteredCards = ALL_CARDS.filter(c => cardMatchesFilters(c, query, domainFilter, setFilter, typeFilter, tagFilter));
       renderedCount = 0;
       document.getElementById('gallery-grid').innerHTML = '';
       renderNextBatch();
@@ -1876,6 +1894,7 @@
     document.getElementById('gallery-domain-filter').addEventListener('change', applyFilters);
     document.getElementById('gallery-set-filter').addEventListener('change', applyFilters);
     document.getElementById('gallery-type-filter').addEventListener('change', applyFilters);
+    document.getElementById('gallery-tag-filter').addEventListener('change', applyFilters);
 
     // --- Deck Builder tab ---
     // Guided flow: Legend -> Chosen Champion -> Cards -> Battlefields -> Runes.
@@ -1926,6 +1945,7 @@
     let deckStep = 'legend';
     let deckQuery = '';
     let deckType = '';
+    let deckTag = '';
     let deckShown = DECK_PAGE_SIZE;
 
     const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
@@ -1981,6 +2001,7 @@
       deckStep = stepAllowed(step, deck) ? step : defaultStep(deck);
       deckQuery = '';
       deckType = '';
+      deckTag = '';
       deckShown = DECK_PAGE_SIZE;
       renderDeckSteps();
       renderDeckZones();
@@ -2244,13 +2265,17 @@
         filters.innerHTML = `<input id="deck-search" type="text" placeholder="Search by name..." autocomplete="off" value="${dkEsc(deckQuery)}">`
           + (deckStep === 'cards'
             ? `<select id="deck-type"><option value="">All Types</option><option>Unit</option><option>Spell</option><option>Gear</option></select>`
-            : '');
+            : '')
+          + `<select id="deck-tag"><option value="">All Tags</option>${tagOptionsHtml()}</select>`;
+        const typeSel = document.getElementById('deck-type');
+        if (typeSel) typeSel.value = deckType;
+        document.getElementById('deck-tag').value = deckTag;
       }
       grid.classList.toggle('landscape', deckStep === 'battlefields');
 
       const q = deckQuery.trim().toLowerCase();
       const list = stepPool(deck)
-        .filter(c => (!q || c.name.toLowerCase().includes(q)) && (!deckType || c.cardType.includes(deckType)))
+        .filter(c => (!q || c.name.toLowerCase().includes(q)) && (!deckType || c.cardType.includes(deckType)) && (!deckTag || (CARD_TAGS[c.name] || []).includes(deckTag)))
         // Default order: energy cost low to high (no-cost cards last), then name
         .sort((a, b) => (a.energy ?? 99) - (b.energy ?? 99) || a.name.localeCompare(b.name));
       const shown = list.slice(0, deckShown);
@@ -2277,7 +2302,7 @@
       deckState.activeId = id || null;
       deckSave();
       deckStep = defaultStep(activeDeck());
-      deckQuery = ''; deckType = ''; deckShown = DECK_PAGE_SIZE;
+      deckQuery = ''; deckType = ''; deckTag = ''; deckShown = DECK_PAGE_SIZE;
       refreshDeckUi();
     }
 
@@ -2537,8 +2562,8 @@
       renderDeckStepBody();
     });
     document.getElementById('deck-filters').addEventListener('change', e => {
-      if (e.target.id !== 'deck-type') return;
-      deckType = e.target.value;
+      if (e.target.id !== 'deck-type' && e.target.id !== 'deck-tag') return;
+      if (e.target.id === 'deck-type') deckType = e.target.value; else deckTag = e.target.value;
       deckShown = DECK_PAGE_SIZE;
       renderDeckStepBody();
     });
